@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ drive.company_name }} — Drive Detail{% endblock %}
+{% block content %}
+<div class="flex" style="justify-content:space-between;margin-bottom:1rem">
+  <div>
+    <h1>{{ drive.company_name }}</h1>
+    <p class="muted">{{ drive.role_title or '' }} &nbsp;|&nbsp; Shortlist: {{ drive.shortlist_count }} students</p>
+  </div>
+  <div>
+    {% if session.user_role == 'placement_cell' %}
+    <form method="POST" action="{{ url_for('drive.run_scoring', drive_id=drive.id) }}" style="display:inline">
+      <button class="btn btn-success" onclick="return confirm('Re-run scoring for all students?')">Run scoring</button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('drive.export_shortlist', drive_id=drive.id) }}" class="btn btn-primary" style="margin-left:0.5rem">Export Excel</a>
+  </div>
+</div>
+
+{% if shortlisted %}
+<div class="card">
+  <h2>Shortlisted students ({{ shortlisted|length }})</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Rank</th><th>Name</th><th>Branch</th><th>CGPA</th>
+        <th>Score</th><th>Skills</th><th>Projects</th><th>GitHub</th><th>CP</th>
+        <th>Matched</th><th>Flags</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ds in shortlisted %}
+      <tr>
+        <td><strong>#{{ ds.rank }}</strong></td>
+        <td>{{ ds.student.name }}<br><span class="muted">{{ ds.student.erp_id }}</span></td>
+        <td>{{ ds.student.branch }}</td>
+        <td>{{ ds.student.cgpa or '—' }}</td>
+        <td>
+          <strong style="color:#1e3a5f">{{ ds.final_score }}%</strong>
+          <div class="score-bar mt1"><div class="score-fill" style="width:{{ ds.final_score }}%"></div></div>
+        </td>
+        <td>{{ ds.score_skills|round(1) }}</td>
+        <td>{{ ds.score_projects|round(1) }}</td>
+        <td>{{ ds.score_github|round(1) }}</td>
+        <td>{{ ds.score_cp|round(1) }}</td>
+        <td>
+          {% for kw in ds.matched_list[:5] %}
+            <span class="badge badge-green">{{ kw }}</span>
+          {% endfor %}
+        </td>
+        <td>
+          {% for f in ds.flags_list %}
+            <span class="badge badge-amber">{{ f }}</span>
+          {% endfor %}
+          {% if ds.boosts_dict %}
+            {% for tag, mult in ds.boosts_dict.items() %}
+              <span class="badge badge-blue">{{ tag }} {{ mult }}x</span>
+            {% endfor %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:2rem">
+  <p class="muted">No results yet. Run scoring to generate the shortlist.</p>
+</div>
+{% endif %}
+{% endblock %}

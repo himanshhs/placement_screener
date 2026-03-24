@@ -1,6 +1,8 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, redirect, url_for, session
 main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def index():
-    return "<h2>Placement Screener — up and running</h2>"
+    if session.get("user_id"):
+        return redirect(url_for("dashboard.index"))
+    return redirect(url_for("auth.login"))

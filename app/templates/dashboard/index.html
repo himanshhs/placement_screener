@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="flex" style="justify-content:space-between;margin-bottom:1.5rem">
+  <div>
+    <h1>Placement cell dashboard</h1>
+    <p class="muted">{{ students_count }} students in database &nbsp;|&nbsp; {{ drives|length }} drives</p>
+  </div>
+  <div>
+    <a href="{{ url_for('drive.new_drive') }}" class="btn btn-primary">+ New drive</a>
+    <a href="{{ url_for('auth.create_hr_user') }}" class="btn btn-outline" style="margin-left:0.5rem">+ HR login</a>
+  </div>
+</div>
+
+{% if drives %}
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Company</th><th>Role</th><th>Shortlist</th><th>Created</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for d in drives %}
+      <tr>
+        <td><strong>{{ d.company_name }}</strong></td>
+        <td>{{ d.role_title or '—' }}</td>
+        <td>{{ d.shortlist_count }}</td>
+        <td class="muted">{{ d.created_at.strftime('%d %b %Y') }}</td>
+        <td>
+          <a href="{{ url_for('dashboard.drive_detail', drive_id=d.id) }}" class="btn btn-outline btn-sm">View</a>
+          <form method="POST" action="{{ url_for('drive.run_scoring', drive_id=d.id) }}" style="display:inline">
+            <button class="btn btn-success btn-sm" onclick="return confirm('Run scoring for {{ d.company_name }}?')">Run scoring</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:3rem">
+  <p class="muted">No drives yet. Create your first drive to get started.</p>
+  <a href="{{ url_for('drive.new_drive') }}" class="btn btn-primary mt1">+ New drive</a>
+</div>
+{% endif %}
+{% endblock %}

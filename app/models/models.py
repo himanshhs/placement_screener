@@ -236,3 +236,30 @@ class DriveScore(db.Model):
 
     def __repr__(self):
         return f"<DriveScore drive={self.drive_id} student={self.student_id} score={self.final_score:.1f}>"
+
+
+# ─────────────────────────────────────────────
+# USER  (placement cell staff + company HR)
+# ─────────────────────────────────────────────
+class User(db.Model):
+    __tablename__ = "users"
+
+    id            = db.Column(db.Integer, primary_key=True)
+    email         = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    full_name     = db.Column(db.String(120))
+
+    # role: "placement_cell" or "company_hr"
+    role          = db.Column(db.String(20), nullable=False, default="company_hr")
+
+    # for company HR — which drive they belong to
+    drive_id      = db.Column(db.Integer, db.ForeignKey("drives.id"), nullable=True)
+
+    is_active     = db.Column(db.Boolean, default=True)
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login    = db.Column(db.DateTime)
+
+    drive         = db.relationship("Drive", backref="hr_users")
+
+    def __repr__(self):
+        return f"<User {self.email} ({self.role})>"

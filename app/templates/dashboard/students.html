@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}All Students{% endblock %}
+{% block content %}
+<h1>All students ({{ students|length }})</h1>
+<div class="card mt1">
+  <table>
+    <thead>
+      <tr><th>ERP ID</th><th>Name</th><th>Branch</th><th>Year</th><th>CGPA</th><th>Backlogs</th><th>GitHub</th><th>Platforms</th></tr>
+    </thead>
+    <tbody>
+      {% for s in students %}
+      <tr>
+        <td class="muted">{{ s.erp_id }}</td>
+        <td><strong>{{ s.name }}</strong><br><span class="muted">{{ s.email }}</span></td>
+        <td>{{ s.branch or '—' }}</td>
+        <td>{{ s.year or '—' }}</td>
+        <td>{{ s.cgpa or '—' }}</td>
+        <td>{% if s.backlogs %}<span class="badge badge-red">{{ s.backlogs }}</span>{% else %}0{% endif %}</td>
+        <td>{% if s.github_url %}<span class="badge badge-green">Yes</span>{% else %}<span class="badge badge-red">No</span>{% endif %}</td>
+        <td>
+          {% if s.leetcode_user %}<span class="badge badge-blue">LC</span>{% endif %}
+          {% if s.codeforces_user %}<span class="badge badge-blue">CF</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
