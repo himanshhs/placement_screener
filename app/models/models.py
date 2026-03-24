@@ -57,18 +57,22 @@ class Resume(db.Model):
     file_path   = db.Column(db.String(300))          # stored PDF path
 
     # raw text per section — populated by the section-aware parser
-    raw_skills      = db.Column(db.Text)
-    raw_projects    = db.Column(db.Text)
-    raw_experience  = db.Column(db.Text)
-    raw_education   = db.Column(db.Text)
-    raw_full        = db.Column(db.Text)             # fallback full text
+    raw_skills          = db.Column(db.Text)
+    raw_projects        = db.Column(db.Text)
+    raw_internships     = db.Column(db.Text)
+    raw_experience      = db.Column(db.Text)
+    raw_certifications  = db.Column(db.Text)
+    raw_achievements    = db.Column(db.Text)
+    raw_education       = db.Column(db.Text)
+    raw_full            = db.Column(db.Text)
 
     # SBERT embedding vectors stored as JSON arrays
-    # (for caching — we recompute only on resume update)
-    embedding_skills      = db.Column(db.Text)       # JSON float list
-    embedding_projects    = db.Column(db.Text)
-    embedding_experience  = db.Column(db.Text)
-    embedding_full        = db.Column(db.Text)
+    embedding_skills          = db.Column(db.Text)
+    embedding_projects        = db.Column(db.Text)
+    embedding_internships     = db.Column(db.Text)
+    embedding_experience      = db.Column(db.Text)
+    embedding_certifications  = db.Column(db.Text)
+    embedding_full            = db.Column(db.Text)
 
     parsed_at   = db.Column(db.DateTime)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -200,12 +204,14 @@ class DriveScore(db.Model):
     student_id  = db.Column(db.Integer, db.ForeignKey("students.id"),  nullable=False)
 
     # component scores (0–100 each)
-    score_skills      = db.Column(db.Float, default=0.0)
-    score_projects    = db.Column(db.Float, default=0.0)
-    score_experience  = db.Column(db.Float, default=0.0)
-    score_github      = db.Column(db.Float, default=0.0)
-    score_cp          = db.Column(db.Float, default=0.0)
-    score_cgpa        = db.Column(db.Float, default=0.0)
+    score_skills          = db.Column(db.Float, default=0.0)
+    score_projects        = db.Column(db.Float, default=0.0)
+    score_internships     = db.Column(db.Float, default=0.0)
+    score_experience      = db.Column(db.Float, default=0.0)
+    score_certifications  = db.Column(db.Float, default=0.0)
+    score_github          = db.Column(db.Float, default=0.0)
+    score_cp              = db.Column(db.Float, default=0.0)
+    score_cgpa            = db.Column(db.Float, default=0.0)
 
     # final weighted score (0–100) after boosts
     final_score       = db.Column(db.Float, default=0.0)

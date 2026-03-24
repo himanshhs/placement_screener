@@ -70,10 +70,12 @@ def _ensure_resume_embeddings(resume, db_session) -> dict:
     Returns {section: embedding_list}.
     """
     sections = {
-        "skills":     (resume.raw_skills,     "embedding_skills"),
-        "projects":   (resume.raw_projects,   "embedding_projects"),
-        "experience": (resume.raw_experience, "embedding_experience"),
-        "full":       (resume.raw_full,       "embedding_full"),
+        "skills":          (resume.raw_skills,         "embedding_skills"),
+        "projects":        (resume.raw_projects,       "embedding_projects"),
+        "internships":     (resume.raw_internships,    "embedding_internships"),
+        "experience":      (resume.raw_experience,     "embedding_experience"),
+        "certifications":  (resume.raw_certifications, "embedding_certifications"),
+        "full":            (resume.raw_full,           "embedding_full"),
     }
     embeddings = {}
     changed = False
@@ -137,9 +139,11 @@ def _score_resume_sections(resume_embeddings: dict, jd_vec: list) -> dict:
     Returns {section: score_0_to_100}.
     """
     return {
-        "skills":     round(_cosine(resume_embeddings.get("skills",     []), jd_vec) * 100, 2),
-        "projects":   round(_cosine(resume_embeddings.get("projects",   []), jd_vec) * 100, 2),
-        "experience": round(_cosine(resume_embeddings.get("experience", []), jd_vec) * 100, 2),
+        "skills":         round(_cosine(resume_embeddings.get("skills",         []), jd_vec) * 100, 2),
+        "projects":       round(_cosine(resume_embeddings.get("projects",       []), jd_vec) * 100, 2),
+        "internships":    round(_cosine(resume_embeddings.get("internships",    []), jd_vec) * 100, 2),
+        "experience":     round(_cosine(resume_embeddings.get("experience",     []), jd_vec) * 100, 2),
+        "certifications": round(_cosine(resume_embeddings.get("certifications", []), jd_vec) * 100, 2),
     }
 
 
@@ -174,16 +178,20 @@ def _get_signal_scores(student) -> dict:
 
 def _weighted_score(section_scores: dict, signal_scores: dict, drive) -> float:
     """
-    Combine all component scores using drive's weight configuration.
-    All weights should sum to 1.0.
+    Combine all component scores using drive weight configuration.
+    Default weights sum to 1.0.
+    internships and certifications share the experience weight pool.
     """
+    experience_weight = drive.weight_experience or 0.15
     score = (
-        section_scores["skills"]     * (drive.weight_skills     or 0.30) +
-        section_scores["projects"]   * (drive.weight_projects   or 0.25) +
-        section_scores["experience"] * (drive.weight_experience or 0.15) +
-        signal_scores["github"]      * (drive.weight_github     or 0.15) +
-        signal_scores["cp"]          * (drive.weight_cp         or 0.10) +
-        signal_scores["cgpa"]        * (drive.weight_cgpa       or 0.05)
+        section_scores["skills"]         * (drive.weight_skills     or 0.30) +
+        section_scores["projects"]       * (drive.weight_projects   or 0.25) +
+        section_scores["internships"]    * (experience_weight * 0.60) +
+        section_scores["experience"]     * (experience_weight * 0.25) +
+        section_scores["certifications"] * (experience_weight * 0.15) +
+        signal_scores["github"]          * (drive.weight_github     or 0.15) +
+        signal_scores["cp"]              * (drive.weight_cp         or 0.10) +
+        signal_scores["cgpa"]            * (drive.weight_cgpa       or 0.05)
     )
     return round(score, 2)
 
@@ -299,9 +307,11 @@ def score_student_for_drive(student, drive, jd_vec: list, db_session) -> Optiona
         ds = DriveScore(drive_id=drive.id, student_id=student.id)
         db_session.add(ds)
 
-    ds.score_skills     = section_scores["skills"]
-    ds.score_projects   = section_scores["projects"]
-    ds.score_experience = section_scores["experience"]
+    ds.score_skills         = section_scores["skills"]
+    ds.score_projects       = section_scores["projects"]
+    ds.score_internships    = section_scores["internships"]
+    ds.score_experience     = section_scores["experience"]
+    ds.score_certifications = section_scores["certifications"]
     ds.score_github     = signal_scores["github"]
     ds.score_cp         = signal_scores["cp"]
     ds.score_cgpa       = signal_scores["cgpa"]

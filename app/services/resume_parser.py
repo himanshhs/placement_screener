@@ -2,7 +2,8 @@
 resume_parser.py
 ────────────────
 Extracts and sections a resume PDF into:
-    skills | projects | experience | achievements | education | full_text
+    skills | projects | experience | internships |
+    certifications | achievements | education | full_text
 
 Stage 1 — raw text via PyMuPDF
 Stage 2 — section detection via keyword heading map
@@ -10,12 +11,9 @@ Stage 3 — clean + store into resumes table
 """
 
 import re
-import json
 from datetime import datetime
-from pathlib import Path
 
 
-# ── Section heading keyword map ────────────────────────────────────────────
 SECTION_PATTERNS = {
     "skills": [
         r"technical\s*skills", r"core\s*skills",
@@ -27,21 +25,45 @@ SECTION_PATTERNS = {
         r"projects?", r"personal\s*projects?", r"academic\s*projects?",
         r"key\s*projects?", r"notable\s*projects?", r"major\s*projects?",
     ],
+    "internships": [
+        r"internships?",
+        r"internship\s*experience",
+        r"industry\s*internships?",
+        r"summer\s*internships?",
+        r"industrial\s*training",
+        r"in[- ]?plant\s*training",
+    ],
     "experience": [
-        r"experience", r"work\s*experience", r"internships?",
-        r"internship\s*experience", r"professional\s*experience",
-        r"industry\s*experience", r"employment",
+        r"work\s*experience",
+        r"professional\s*experience",
+        r"employment(\s*history)?",
+        r"^experience$",
+    ],
+    "certifications": [
+        r"certifications?",
+        r"certificates?",
+        r"licen[sc]es?\s*&?\s*certifications?",
+        r"professional\s*certifications?",
+        r"online\s*courses?\s*&?\s*certifications?",
+        r"courses?\s*&?\s*certifications?",
+        r"moocs?",
     ],
     "achievements": [
-        r"achievements?", r"awards?\s*&?\s*achievements?",
-        r"honors?\s*&?\s*awards?", r"accomplishments?",
-        r"certifications?\s*&?\s*achievements?",
-        r"extra[- ]?curricular", r"positions?\s*of\s*responsibility",
+        r"achievements?",
+        r"awards?\s*&?\s*achievements?",
+        r"honors?\s*&?\s*awards?",
+        r"accomplishments?",
+        r"extra[- ]?curricular",
+        r"positions?\s*of\s*responsibility",
         r"leadership",
+        r"activities",
     ],
     "education": [
-        r"education", r"educational\s*background",
-        r"academic\s*background", r"qualifications?", r"academics?",
+        r"education",
+        r"educational\s*background",
+        r"academic\s*background",
+        r"qualifications?",
+        r"academics?",
     ],
 }
 
@@ -58,6 +80,10 @@ ABBREVIATIONS = {
     r"\bds\b":  "data science",
     r"\bapi\b": "application programming interface",
     r"\boop\b": "object oriented programming",
+    r"\baws\b": "amazon web services",
+    r"\bgcp\b": "google cloud platform",
+    r"\bci\b":  "continuous integration",
+    r"\bcd\b":  "continuous deployment",
 }
 
 
@@ -100,7 +126,10 @@ def extract_text_from_pdf(file_path: str) -> str:
 
 
 def split_into_sections(raw_text: str) -> dict:
-    sections = {k: [] for k in ["skills","projects","experience","achievements","education","unclassified"]}
+    sections = {k: [] for k in [
+        "skills", "projects", "internships", "experience",
+        "certifications", "achievements", "education", "unclassified"
+    ]}
     current_section = "unclassified"
     for line in raw_text.split("\n"):
         detected = _detect_section(line)
@@ -123,8 +152,8 @@ def parse_resume(file_path: str) -> dict:
             continue
         result[f"raw_{name}"] = _expand_abbreviations(_clean_text(text))
 
-    result["raw_full"]   = _expand_abbreviations(_clean_text(raw_text))
-    result["parsed_at"]  = datetime.utcnow()
+    result["raw_full"]  = _expand_abbreviations(_clean_text(raw_text))
+    result["parsed_at"] = datetime.utcnow()
     return result
 
 
@@ -135,15 +164,21 @@ def save_parsed_resume(student_id: int, file_path: str, parsed: dict, db_session
         resume = Resume(student_id=student_id)
         db_session.add(resume)
 
-    resume.file_path      = str(file_path)
-    resume.raw_skills     = parsed.get("raw_skills", "")
-    resume.raw_projects   = parsed.get("raw_projects", "")
-    resume.raw_experience = parsed.get("raw_experience", "")
-    resume.raw_education  = parsed.get("raw_education", "")
-    resume.raw_full       = parsed.get("raw_full", "")
-    resume.parsed_at      = parsed.get("parsed_at", datetime.utcnow())
-    resume.embedding_skills = resume.embedding_projects = None
-    resume.embedding_experience = resume.embedding_full = None
+    resume.file_path           = str(file_path)
+    resume.raw_skills          = parsed.get("raw_skills", "")
+    resume.raw_projects        = parsed.get("raw_projects", "")
+    resume.raw_internships     = parsed.get("raw_internships", "")
+    resume.raw_experience      = parsed.get("raw_experience", "")
+    resume.raw_certifications  = parsed.get("raw_certifications", "")
+    resume.raw_education       = parsed.get("raw_education", "")
+    resume.raw_full            = parsed.get("raw_full", "")
+    resume.parsed_at           = parsed.get("parsed_at", datetime.utcnow())
+
+    # clear cached embeddings on every new parse
+    for col in ["embedding_skills", "embedding_projects", "embedding_internships",
+                "embedding_experience", "embedding_certifications", "embedding_full"]:
+        setattr(resume, col, None)
+
     db_session.commit()
     return resume
 
