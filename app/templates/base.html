@@ -61,6 +61,8 @@
       <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
       {% if session.user_role == 'placement_cell' %}
         <a href="{{ url_for('dashboard.students') }}">Students</a>
+        <a href="{{ url_for('student.bulk_import') }}">Import CSV</a>
+        <a href="{{ url_for('student.register') }}">Register student</a>
         <a href="{{ url_for('drive.new_drive') }}">+ New Drive</a>
       {% endif %}
       <a href="{{ url_for('auth.logout') }}">Logout</a>

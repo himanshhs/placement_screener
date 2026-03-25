@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Bulk Import Students{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+  <h1>Bulk import students</h1>
+  <p class="muted" style="margin-bottom:1.5rem">Upload a CSV exported from your college ERP. Column names are flexible — see the sample below.</p>
+
+  {% if result %}
+  <div class="card" style="background:#e8f5e9;border:1px solid #a5d6a7;margin-bottom:1.5rem">
+    <h2 style="color:#2e7d32">Import summary</h2>
+    <div style="display:flex;gap:2rem;margin-top:0.75rem">
+      <div style="text-align:center">
+        <div style="font-size:2rem;font-weight:700;color:#2e7d32">{{ result.imported }}</div>
+        <div class="muted" style="font-size:0.85rem">New students</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:2rem;font-weight:700;color:#1565c0">{{ result.updated }}</div>
+        <div class="muted" style="font-size:0.85rem">Updated</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:2rem;font-weight:700;color:#777">{{ result.skipped }}</div>
+        <div class="muted" style="font-size:0.85rem">Skipped</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:2rem;font-weight:700;color:#c62828">{{ result.errors|length }}</div>
+        <div class="muted" style="font-size:0.85rem">Errors</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Upload CSV</h2>
+    <form method="POST" enctype="multipart/form-data">
+      <label>CSV file</label>
+      <input type="file" name="csv_file" accept=".csv" required style="margin-bottom:1rem">
+      <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;margin-bottom:1rem">
+        <input type="checkbox" name="update_existing" style="width:auto;margin:0">
+        Update existing students if ERP ID matches
+      </label>
+      <button class="btn btn-primary">Import students</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="flex" style="justify-content:space-between;margin-bottom:0.75rem">
+      <h2 style="margin:0">Required CSV format</h2>
+      <form method="POST">
+        <button name="sample" value="1" class="btn btn-outline btn-sm">Download sample CSV</button>
+      </form>
+    </div>
+    <p class="muted" style="font-size:0.85rem;margin-bottom:0.75rem">Only <strong>erp_id</strong>, <strong>name</strong>, and <strong>email</strong> are required. All other columns are optional.</p>
+    <div style="overflow-x:auto">
+      <table style="font-size:0.8rem;min-width:600px">
+        <thead>
+          <tr>
+            {% for col in ['erp_id*','name*','email*','branch','year','cgpa','backlogs','tenth_pct','twelfth_pct','github_url','leetcode_user','codeforces_user'] %}
+            <th style="white-space:nowrap">{{ col }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            {% for val in ['CS2021001','Himanshu Patil','h@college.edu','CSE','3','8.7','0','91.2','87.5','github.com/…','himanshu_lc','himanshu_cf'] %}
+            <td class="muted" style="white-space:nowrap">{{ val }}</td>
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if sample_csv %}
+  <div class="card">
+    <h2>Sample CSV content</h2>
+    <pre style="font-size:0.78rem;overflow-x:auto;background:#f5f5f5;padding:1rem;border-radius:6px;color:#333">{{ sample_csv }}</pre>
+    <p class="muted" style="font-size:0.82rem;margin-top:0.5rem">Copy this, save as students.csv, fill in your data and upload above.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -11,7 +11,7 @@
       {% for s in students %}
       <tr>
         <td class="muted">{{ s.erp_id }}</td>
-        <td><strong>{{ s.name }}</strong><br><span class="muted">{{ s.email }}</span></td>
+        <td><a href="{{ url_for('student.profile', student_id=s.id) }}" style="text-decoration:none;color:inherit"><strong>{{ s.name }}</strong></a><br><span class="muted">{{ s.email }}</span></td>
         <td>{{ s.branch or '—' }}</td>
         <td>{{ s.year or '—' }}</td>
         <td>{{ s.cgpa or '—' }}</td>

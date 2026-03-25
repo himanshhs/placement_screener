@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Student Registration{% endblock %}
+{% block content %}
+<div style="max-width:680px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:2rem">
+    <h1>Student registration</h1>
+    <p class="muted">Fill in your details accurately — this information is used for placement screening</p>
+  </div>
+
+  <form method="POST" enctype="multipart/form-data">
+
+    <div class="card">
+      <h2>Academic details</h2>
+      <div class="grid-2">
+        <div><label>ERP / Roll number <span style="color:#c62828">*</span></label>
+          <input type="text" name="erp_id" required placeholder="e.g. CS2021045"></div>
+        <div><label>Full name <span style="color:#c62828">*</span></label>
+          <input type="text" name="name" required placeholder="As per college records"></div>
+        <div><label>College email <span style="color:#c62828">*</span></label>
+          <input type="email" name="email" required placeholder="you@college.edu"></div>
+        <div><label>Branch</label>
+          <select name="branch">
+            <option value="">Select branch</option>
+            {% for b in ['CSE','IT','ECE','EE','ME','CE','AIDS','AIML','DS'] %}
+            <option value="{{ b }}">{{ b }}</option>
+            {% endfor %}
+          </select></div>
+        <div><label>Current year</label>
+          <select name="year">
+            <option value="">Select year</option>
+            {% for y in [1,2,3,4] %}<option value="{{ y }}">Year {{ y }}</option>{% endfor %}
+          </select></div>
+        <div><label>CGPA (out of 10)</label>
+          <input type="number" name="cgpa" min="0" max="10" step="0.01" placeholder="e.g. 8.75"></div>
+        <div><label>Active backlogs</label>
+          <input type="number" name="backlogs" min="0" value="0"></div>
+        <div></div>
+        <div><label>10th percentage</label>
+          <input type="number" name="tenth_pct" min="0" max="100" step="0.01" placeholder="e.g. 91.2"></div>
+        <div><label>12th percentage</label>
+          <input type="number" name="twelfth_pct" min="0" max="100" step="0.01" placeholder="e.g. 87.5"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>External profiles</h2>
+      <p class="muted" style="margin-bottom:1rem;font-size:0.85rem">These are used to fetch your technical activity signals automatically</p>
+      <div class="grid-2">
+        <div><label>GitHub profile URL</label>
+          <input type="url" name="github_url" placeholder="https://github.com/username"></div>
+        <div><label>LinkedIn URL</label>
+          <input type="url" name="linkedin_url" placeholder="https://linkedin.com/in/username"></div>
+        <div><label>LeetCode username</label>
+          <input type="text" name="leetcode_user" placeholder="your-leetcode-username"></div>
+        <div><label>Codeforces handle</label>
+          <input type="text" name="codeforces_user" placeholder="your-cf-handle"></div>
+        <div><label>CodeChef username</label>
+          <input type="text" name="codechef_user" placeholder="your-codechef-username"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Resume</h2>
+      <p class="muted" style="margin-bottom:1rem;font-size:0.85rem">Upload your latest resume PDF. It will be parsed automatically into sections.</p>
+      <input type="file" name="resume" accept=".pdf">
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;padding:0.8rem;font-size:1rem">Submit registration</button>
+  </form>
+</div>
+{% endblock %}
