@@ -1,17 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Login{% endblock %}
-{% block content %}
-<div style="max-width:400px;margin:4rem auto;">
-  <div class="card">
-    <h1 style="margin-bottom:0.25rem">Sign in</h1>
-    <p class="muted mb1">Placement Screener Portal</p>
-    <form method="POST">
-      <label>Email</label>
-      <input type="email" name="email" required autofocus>
-      <label>Password</label>
-      <input type="password" name="password" required>
-      <button class="btn btn-primary" style="width:100%">Sign in</button>
-    </form>
+{% block auth_content %}
+<div class="auth-wrap">
+  <div style="width:100%;max-width:400px;padding:1.5rem">
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:1.6rem;font-weight:700;letter-spacing:-0.5px;color:var(--text)">Place<span style="color:var(--accent)">IQ</span></div>
+      <p style="color:var(--muted);font-size:0.85rem;margin-top:0.4rem">Placement Intelligence System</p>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:1.25rem">Sign in to continue</h2>
+      {% for cat, msg in get_flashed_messages(with_categories=True) %}
+      <div class="flash {{ cat }}" style="margin-bottom:1rem">{{ msg }}</div>
+      {% endfor %}
+      <form method="POST">
+        <label>Email address</label>
+        <input type="email" name="email" required autofocus placeholder="you@college.edu">
+        <label>Password</label>
+        <input type="password" name="password" required placeholder="••••••••">
+        <button class="btn btn-primary" style="width:100%;padding:0.65rem;font-size:0.9rem;justify-content:center;margin-top:0.25rem">Sign in</button>
+      </form>
+    </div>
+    <p style="text-align:center;font-size:0.78rem;color:var(--muted);margin-top:1rem">
+      Student? <a href="{{ url_for('student.register') }}" style="color:var(--accent)">Register your profile</a>
+    </p>
   </div>
 </div>
 {% endblock %}

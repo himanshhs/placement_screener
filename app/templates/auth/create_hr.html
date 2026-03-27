@@ -1,19 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Create HR Login{% endblock %}
+{% block title %}Create HR Login — PlaceIQ{% endblock %}
+{% block topbar_title %}Create HR login{% endblock %}
 {% block content %}
-<h1>Create company HR login</h1>
-<div class="card mt1" style="max-width:500px">
-  <form method="POST">
-    <label>Full name</label><input type="text" name="full_name" required>
-    <label>Email</label><input type="email" name="email" required>
-    <label>Password</label><input type="password" name="password" required>
-    <label>Assign to drive</label>
-    <select name="drive_id">
-      {% for d in drives %}
+<div style="max-width:480px">
+  <div class="card">
+    <h2>Create company HR login</h2>
+    <p class="muted mb-1" style="font-size:0.82rem">HR users can only view and export their assigned drive's shortlist.</p>
+    <form method="POST">
+      <label>Full name</label>
+      <input type="text" name="full_name" required>
+      <label>Email address</label>
+      <input type="email" name="email" required>
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <label>Assign to drive</label>
+      <select name="drive_id">
+        {% for d in drives %}
         <option value="{{ d.id }}">{{ d.company_name }} — {{ d.role_title }}</option>
-      {% endfor %}
-    </select>
-    <button class="btn btn-primary">Create login</button>
-  </form>
+        {% endfor %}
+      </select>
+      <button class="btn btn-primary" style="margin-top:0.25rem">Create login</button>
+    </form>
+  </div>
 </div>
 {% endblock %}

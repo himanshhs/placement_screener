@@ -1,27 +1,31 @@
 {% extends "base.html" %}
-{% block title %}New Drive{% endblock %}
+{% block title %}New Drive — PlaceIQ{% endblock %}
+{% block topbar_title %}New drive{% endblock %}
 {% block content %}
-<h1>Create new drive</h1>
-<p class="muted mb1">Upload or paste the JD — weights will be auto-suggested.</p>
-<div class="card">
-  <form method="POST" enctype="multipart/form-data">
-    <div class="grid-2">
-      <div>
-        <label>Company name</label>
-        <input type="text" name="company_name" required placeholder="e.g. Google">
+<div style="max-width:680px">
+  <p class="muted mb-1">Upload or paste the job description — weights will be auto-suggested from the JD content.</p>
+  <div class="card">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="grid-2">
+        <div>
+          <label>Company name</label>
+          <input type="text" name="company_name" required placeholder="e.g. Google">
+        </div>
+        <div>
+          <label>Role title</label>
+          <input type="text" name="role_title" placeholder="e.g. SWE Intern">
+        </div>
       </div>
-      <div>
-        <label>Role title</label>
-        <input type="text" name="role_title" placeholder="e.g. SWE Intern">
-      </div>
-    </div>
-    <label>Shortlist count</label>
-    <input type="number" name="shortlist_count" value="50" min="1" max="500" style="width:160px">
-    <label class="mt1">Paste JD text</label>
-    <textarea name="jd_text" rows="8" placeholder="Paste the full job description here..."></textarea>
-    <label>Or upload JD PDF</label>
-    <input type="file" name="jd_file" accept=".pdf" style="margin-bottom:1rem">
-    <button class="btn btn-primary">Analyse JD and suggest weights</button>
-  </form>
+      <label>Shortlist count</label>
+      <input type="number" name="shortlist_count" value="50" min="1" max="500" style="width:140px">
+      <label style="margin-top:0.5rem">Job description — paste text</label>
+      <textarea name="jd_text" rows="9" placeholder="Paste the full job description here. The system will analyse it and suggest weights automatically..."></textarea>
+      <label>Or upload JD as PDF</label>
+      <input type="file" name="jd_file" accept=".pdf" style="border-radius:8px">
+      <button class="btn btn-primary" style="margin-top:0.75rem;padding:0.6rem 1.5rem">
+        Analyse JD and suggest weights →
+      </button>
+    </form>
+  </div>
 </div>
 {% endblock %}

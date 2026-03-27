@@ -1,29 +1,94 @@
 {% extends "base.html" %}
-{% block title %}All Students{% endblock %}
+{% block title %}Students — PlaceIQ{% endblock %}
+{% block topbar_title %}All students{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('student.bulk_import') }}" class="btn btn-ghost btn-sm">Import CSV</a>
+  <a href="{{ url_for('student.register') }}" class="btn btn-primary btn-sm">+ Register</a>
+{% endblock %}
 {% block content %}
-<h1>All students ({{ students|length }})</h1>
-<div class="card mt1">
-  <table>
-    <thead>
-      <tr><th>ERP ID</th><th>Name</th><th>Branch</th><th>Year</th><th>CGPA</th><th>Backlogs</th><th>GitHub</th><th>Platforms</th></tr>
-    </thead>
-    <tbody>
-      {% for s in students %}
-      <tr>
-        <td class="muted">{{ s.erp_id }}</td>
-        <td><a href="{{ url_for('student.profile', student_id=s.id) }}" style="text-decoration:none;color:inherit"><strong>{{ s.name }}</strong></a><br><span class="muted">{{ s.email }}</span></td>
-        <td>{{ s.branch or '—' }}</td>
-        <td>{{ s.year or '—' }}</td>
-        <td>{{ s.cgpa or '—' }}</td>
-        <td>{% if s.backlogs %}<span class="badge badge-red">{{ s.backlogs }}</span>{% else %}0{% endif %}</td>
-        <td>{% if s.github_url %}<span class="badge badge-green">Yes</span>{% else %}<span class="badge badge-red">No</span>{% endif %}</td>
-        <td>
-          {% if s.leetcode_user %}<span class="badge badge-blue">LC</span>{% endif %}
-          {% if s.codeforces_user %}<span class="badge badge-blue">CF</span>{% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">{{ students|length }} students</div>
+      <div class="card-sub">Click any student to view full profile</div>
+    </div>
+    <input type="text" id="search" placeholder="Search name or ERP..." style="width:220px;margin:0;padding:0.4rem 0.75rem;font-size:0.8rem" oninput="filterStudents(this.value)">
+  </div>
+  <div class="table-wrap">
+    <table id="students-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Branch</th>
+          <th>Year</th>
+          <th>CGPA</th>
+          <th>Backlogs</th>
+          <th>GitHub</th>
+          <th>CP platforms</th>
+          <th>Tags</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr onclick="window.location='{{ url_for('student.profile', student_id=s.id) }}'" style="cursor:pointer">
+          <td>
+            <div style="font-weight:500">{{ s.name }}</div>
+            <div style="font-size:0.75rem;color:var(--muted)">{{ s.erp_id }} · {{ s.email }}</div>
+          </td>
+          <td><span class="badge badge-gray">{{ s.branch or '—' }}</span></td>
+          <td style="color:var(--muted2)">{{ s.year or '—' }}</td>
+          <td style="font-family:'DM Mono',monospace">
+            {% if s.cgpa %}
+              <span style="color:{% if s.cgpa >= 8.5 %}var(--accent2){% elif s.cgpa >= 7.0 %}var(--accent){% else %}var(--amber){% endif %}">
+                {{ s.cgpa }}
+              </span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if s.backlogs and s.backlogs > 0 %}
+              <span class="badge badge-red">{{ s.backlogs }}</span>
+            {% else %}
+              <span style="color:var(--muted2)">0</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if s.github_signal %}
+              <span class="badge badge-blue" style="font-family:'DM Mono',monospace">{{ s.github_signal.github_score|round(1) }}</span>
+            {% elif s.github_url %}
+              <span class="badge badge-gray">linked</span>
+            {% else %}
+              <span style="color:var(--muted)">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if s.cp_signal %}
+              {% if s.cp_signal.flag_suspicious %}
+                <span class="badge badge-red">⚠ flagged</span>
+              {% else %}
+                <span class="badge badge-green" style="font-family:'DM Mono',monospace">{{ s.cp_signal.cp_score|round(1) }}</span>
+              {% endif %}
+            {% else %}
+              <span style="color:var(--muted)">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if s.is_startup_founder %}<span class="badge badge-amber" style="margin-right:2px">Founder</span>{% endif %}
+            {% if s.has_ml_internship %}<span class="badge badge-purple" style="margin-right:2px">ML intern</span>{% endif %}
+            {% if s.has_open_source %}<span class="badge badge-blue">OSS</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
+<script>
+function filterStudents(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#students-table tbody tr').forEach(row => {
+    const text = row.querySelector('td:first-child')?.textContent.toLowerCase() || '';
+    row.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+</script>
 {% endblock %}

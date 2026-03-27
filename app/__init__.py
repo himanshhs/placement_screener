@@ -33,6 +33,12 @@ def create_app(config=None):
     app.register_blueprint(student_bp,   url_prefix="/students")
     app.register_blueprint(dashboard_bp, url_prefix="/dashboard")
 
+    import json
+    @app.template_filter('fromjson')
+    def fromjson_filter(s):
+        try: return json.loads(s) if s else []
+        except: return []
+
     with app.app_context():
         db.create_all()
         # create default placement cell admin on first run

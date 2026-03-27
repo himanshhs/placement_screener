@@ -1,78 +1,72 @@
 {% extends "base.html" %}
-{% block title %}Configure Drive{% endblock %}
+{% block title %}Configure Drive — PlaceIQ{% endblock %}
+{% block topbar_title %}Configure — {{ pending.company_name }}{% endblock %}
 {% block content %}
-<h1>Configure weights — {{ pending.company_name }}</h1>
-<p class="muted mb1">Auto-suggested based on JD analysis. Adjust sliders and confirm.</p>
+<div style="max-width:860px">
+  {% if pending.notes %}
+  <div class="card" style="border-color:rgba(74,222,128,0.2);background:rgba(74,222,128,0.04);margin-bottom:1.25rem">
+    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent2);margin-bottom:0.5rem">JD Analysis</div>
+    {% for note in pending.notes %}
+    <p style="font-size:0.83rem;color:var(--muted2);margin-top:0.25rem">· {{ note }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
 
-{% if pending.notes %}
-<div class="card" style="background:#e8f5e9;border:1px solid #a5d6a7">
-  <h3 style="color:#2e7d32">JD analysis notes</h3>
-  {% for note in pending.notes %}
-    <p style="font-size:0.88rem;color:#388e3c;margin-top:0.3rem">{{ note }}</p>
-  {% endfor %}
-</div>
-{% endif %}
-
-<form method="POST">
-  <div class="grid-2">
-    <div class="card">
-      <h2>Scoring weights</h2>
-      <p class="muted" style="margin-bottom:1rem;font-size:0.82rem">Adjust sliders — total should stay near 100%</p>
-      {% set axes = [
-        ('weight_skills',        'Skills match',        pending.weights.skills),
-        ('weight_projects',      'Projects match',      pending.weights.projects),
-        ('weight_experience',    'Experience pool',     pending.weights.experience),
-        ('weight_github',        'GitHub activity',     pending.weights.github),
-        ('weight_cp',            'CP score',            pending.weights.cp),
-        ('weight_cgpa',          'CGPA',                pending.weights.cgpa),
-      ] %}
-      {% for name, label, val in axes %}
-      <div class="weight-row">
-        <span class="weight-label">{{ label }}</span>
-        <input type="range" name="{{ name }}" min="0" max="0.6" step="0.01"
-               value="{{ val }}" oninput="updateVal('{{ name }}', this.value)">
-        <span class="weight-val" id="v_{{ name }}">{{ (val * 100)|round|int }}%</span>
-        <input type="hidden" name="{{ name }}_hidden" id="h_{{ name }}">
-      </div>
-      {% endfor %}
-    </div>
-
-    <div>
+  <form method="POST">
+    <div class="grid-2">
       <div class="card">
-        <h2>Special signal boosts</h2>
-        <p class="muted" style="font-size:0.82rem;margin-bottom:1rem">1.0 = no boost, 1.15 = +15%</p>
-        {% for name, label in [('boost_startup_founder','Startup founder'),('boost_ml_internship','ML internship'),('boost_open_source','Open source contributor')] %}
+        <h2>Scoring weights</h2>
+        <p class="muted mb-1" style="font-size:0.78rem">Auto-suggested from JD. Adjust as needed.</p>
+        {% set axes = [
+          ('weight_skills',     'Skills match',     pending.weights.skills),
+          ('weight_projects',   'Projects match',   pending.weights.projects),
+          ('weight_experience', 'Experience pool',  pending.weights.experience),
+          ('weight_github',     'GitHub activity',  pending.weights.github),
+          ('weight_cp',         'CP score',         pending.weights.cp),
+          ('weight_cgpa',       'CGPA',             pending.weights.cgpa),
+        ] %}
+        {% for name, label, val in axes %}
         <div class="weight-row">
           <span class="weight-label">{{ label }}</span>
-          <input type="range" name="{{ name }}" min="1.0" max="1.25" step="0.01"
-                 value="1.0" oninput="updateBoost('{{ name }}', this.value)">
-          <span class="weight-val" id="b_{{ name }}">1.00x</span>
+          <input type="range" name="{{ name }}" min="0" max="0.6" step="0.01"
+                 value="{{ val }}" oninput="updateVal('{{ name }}', this.value)" style="flex:1">
+          <span class="weight-val" id="v_{{ name }}">{{ (val * 100)|round|int }}%</span>
         </div>
         {% endfor %}
       </div>
 
-      <div class="card">
-        <h2>Eligibility filters</h2>
-        <label>Minimum CGPA (0 = no filter)</label>
-        <input type="number" name="min_cgpa" value="0" min="0" max="10" step="0.1" style="width:120px">
-        <label>Maximum backlogs allowed</label>
-        <input type="number" name="max_backlogs" value="0" min="0" max="20" style="width:120px">
-        <label>Allowed branches (comma separated, blank = all)</label>
-        <input type="text" name="allowed_branches" placeholder="CSE, IT, ECE">
+      <div>
+        <div class="card">
+          <h2>Special signal boosts</h2>
+          <p class="muted mb-1" style="font-size:0.78rem">1.00x = disabled · max 1.25x</p>
+          {% for name, label in [('boost_startup_founder','Startup founder'),('boost_ml_internship','ML internship'),('boost_open_source','Open source')] %}
+          <div class="weight-row">
+            <span class="weight-label">{{ label }}</span>
+            <input type="range" name="{{ name }}" min="1.0" max="1.25" step="0.01"
+                   value="1.0" oninput="updateBoost('{{ name }}', this.value)" style="flex:1">
+            <span class="weight-val" id="b_{{ name }}">1.00x</span>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="card">
+          <h2>Eligibility filters</h2>
+          <label>Minimum CGPA <span class="muted">(0 = no filter)</span></label>
+          <input type="number" name="min_cgpa" value="0" min="0" max="10" step="0.1" style="width:120px">
+          <label>Maximum backlogs allowed</label>
+          <input type="number" name="max_backlogs" value="0" min="0" max="20" style="width:120px">
+          <label>Allowed branches <span class="muted">(comma separated, blank = all)</span></label>
+          <input type="text" name="allowed_branches" placeholder="CSE, IT, ECE">
+        </div>
       </div>
     </div>
-  </div>
-
-  <button class="btn btn-primary" style="margin-top:0.5rem">Confirm and create drive</button>
-  <a href="{{ url_for('drive.new_drive') }}" class="btn btn-outline" style="margin-left:0.75rem">Back</a>
-</form>
-
+    <div style="display:flex;gap:0.75rem;margin-top:0.25rem">
+      <button class="btn btn-primary" style="padding:0.6rem 1.5rem">Confirm and create drive</button>
+      <a href="{{ url_for('drive.new_drive') }}" class="btn btn-ghost">Back</a>
+    </div>
+  </form>
+</div>
 <script>
-function updateVal(name, val) {
-  document.getElementById('v_' + name).textContent = Math.round(val * 100) + '%';
-}
-function updateBoost(name, val) {
-  document.getElementById('b_' + name).textContent = parseFloat(val).toFixed(2) + 'x';
-}
+function updateVal(n, v) { document.getElementById('v_'+n).textContent = Math.round(v*100)+'%'; }
+function updateBoost(n, v) { document.getElementById('b_'+n).textContent = parseFloat(v).toFixed(2)+'x'; }
 </script>
 {% endblock %}

@@ -1,70 +1,180 @@
 {% extends "base.html" %}
-{% block title %}{{ drive.company_name }} — Drive Detail{% endblock %}
+{% block title %}{{ drive.company_name }} — PlaceIQ{% endblock %}
+{% block topbar_title %}{{ drive.company_name }} &nbsp;<span style="color:var(--muted);font-weight:400;font-size:0.85rem">/ {{ drive.role_title }}</span>{% endblock %}
+{% block topbar_actions %}
+  {% if session.user_role == 'placement_cell' %}
+  <form method="POST" action="{{ url_for('drive.run_scoring', drive_id=drive.id) }}" style="display:inline">
+    <button class="btn btn-success btn-sm" onclick="return confirm('Re-run scoring for all students?')">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Re-score
+    </button>
+  </form>
+  {% endif %}
+  <a href="{{ url_for('drive.export_shortlist', drive_id=drive.id) }}" class="btn btn-primary btn-sm">
+    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+    Export Excel
+  </a>
+{% endblock %}
 {% block content %}
-<div class="flex" style="justify-content:space-between;margin-bottom:1rem">
-  <div>
-    <h1>{{ drive.company_name }}</h1>
-    <p class="muted">{{ drive.role_title or '' }} &nbsp;|&nbsp; Shortlist: {{ drive.shortlist_count }} students</p>
+
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+  <div class="stat-card accent">
+    <div class="stat-label">Shortlisted</div>
+    <div class="stat-value">{{ shortlisted|length }}</div>
+    <div class="stat-sub">of {{ drive.shortlist_count }} target</div>
   </div>
-  <div>
-    {% if session.user_role == 'placement_cell' %}
-    <form method="POST" action="{{ url_for('drive.run_scoring', drive_id=drive.id) }}" style="display:inline">
-      <button class="btn btn-success" onclick="return confirm('Re-run scoring for all students?')">Run scoring</button>
-    </form>
-    {% endif %}
-    <a href="{{ url_for('drive.export_shortlist', drive_id=drive.id) }}" class="btn btn-primary" style="margin-left:0.5rem">Export Excel</a>
+  <div class="stat-card">
+    <div class="stat-label">Total scored</div>
+    <div class="stat-value">{{ all_scored|length }}</div>
+    <div class="stat-sub">eligible students</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">Top score</div>
+    <div class="stat-value">{% if shortlisted %}{{ shortlisted[0].final_score|round(1) }}{% else %}—{% endif %}</div>
+    <div class="stat-sub">highest in drive</div>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-label">Min CGPA filter</div>
+    <div class="stat-value" style="font-size:1.2rem;margin-top:0.4rem">{{ drive.min_cgpa or '—' }}</div>
+    <div class="stat-sub">hard cutoff</div>
   </div>
 </div>
 
 {% if shortlisted %}
 <div class="card">
-  <h2>Shortlisted students ({{ shortlisted|length }})</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Rank</th><th>Name</th><th>Branch</th><th>CGPA</th>
-        <th>Score</th><th>Skills</th><th>Projects</th><th>GitHub</th><th>CP</th>
-        <th>Matched</th><th>Flags</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for ds in shortlisted %}
-      <tr>
-        <td><strong>#{{ ds.rank }}</strong></td>
-        <td>{{ ds.student.name }}<br><span class="muted">{{ ds.student.erp_id }}</span></td>
-        <td>{{ ds.student.branch }}</td>
-        <td>{{ ds.student.cgpa or '—' }}</td>
-        <td>
-          <strong style="color:#1e3a5f">{{ ds.final_score }}%</strong>
-          <div class="score-bar mt1"><div class="score-fill" style="width:{{ ds.final_score }}%"></div></div>
-        </td>
-        <td>{{ ds.score_skills|round(1) }}</td>
-        <td>{{ ds.score_projects|round(1) }}</td>
-        <td>{{ ds.score_github|round(1) }}</td>
-        <td>{{ ds.score_cp|round(1) }}</td>
-        <td>
-          {% for kw in ds.matched_list[:5] %}
-            <span class="badge badge-green">{{ kw }}</span>
-          {% endfor %}
-        </td>
-        <td>
-          {% for f in ds.flags_list %}
-            <span class="badge badge-amber">{{ f }}</span>
-          {% endfor %}
-          {% if ds.boosts_dict %}
+  <div class="card-header">
+    <div>
+      <div class="card-title">Shortlisted students</div>
+      <div class="card-sub">Ranked by weighted score · Click row to expand details</div>
+    </div>
+    <div class="flex gap-sm">
+      <input type="text" id="search" placeholder="Search name..." style="width:180px;margin:0;padding:0.4rem 0.75rem;font-size:0.8rem" oninput="filterRows(this.value)">
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table id="results-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Student</th>
+          <th>Branch</th>
+          <th>CGPA</th>
+          <th>Score</th>
+          <th>Skills</th>
+          <th>GitHub</th>
+          <th>CP</th>
+          <th>Signals</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ds in shortlisted %}
+        {% set pct = ds.final_score %}
+        {% set fill_class = 'high' if pct >= 70 else ('medium' if pct >= 50 else ('low' if pct >= 35 else 'vlow')) %}
+        <tr onclick="toggleDetail('d{{ ds.id }}')" style="cursor:pointer">
+          <td>
+            <div class="rank-badge {{ 'rank-1' if ds.rank==1 else 'rank-2' if ds.rank==2 else 'rank-3' if ds.rank==3 else 'rank-n' }}">
+              {{ ds.rank }}
+            </div>
+          </td>
+          <td>
+            <div style="font-weight:500">{{ ds.student.name }}</div>
+            <div style="font-size:0.75rem;color:var(--muted)">{{ ds.student.erp_id }}</div>
+          </td>
+          <td><span class="badge badge-gray">{{ ds.student.branch or '—' }}</span></td>
+          <td style="font-family:'DM Mono',monospace;font-size:0.85rem">{{ ds.student.cgpa or '—' }}</td>
+          <td style="min-width:100px">
+            <div style="font-weight:600;font-family:'DM Mono',monospace;color:{% if pct>=70 %}var(--accent2){% elif pct>=50 %}var(--accent){% elif pct>=35 %}var(--amber){% else %}var(--red){% endif %}">
+              {{ ds.final_score|round(1) }}%
+            </div>
+            <div class="score-bar"><div class="score-fill {{ fill_class }}" style="width:{{ ds.final_score }}%"></div></div>
+          </td>
+          <td style="font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--muted2)">{{ ds.score_skills|round(1) }}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--muted2)">{{ ds.score_github|round(1) }}</td>
+          <td>
+            {% if ds.student.cp_signal and ds.student.cp_signal.flag_suspicious %}
+              <span class="badge badge-red" title="{{ ds.student.cp_signal.flag_reason }}">⚠ flagged</span>
+            {% else %}
+              <span style="font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--muted2)">{{ ds.score_cp|round(1) }}</span>
+            {% endif %}
+          </td>
+          <td>
             {% for tag, mult in ds.boosts_dict.items() %}
-              <span class="badge badge-blue">{{ tag }} {{ mult }}x</span>
+              <span class="badge badge-purple" style="margin-right:2px">{{ tag }}</span>
             {% endfor %}
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+            {% if not ds.boosts_dict %}—{% endif %}
+          </td>
+        </tr>
+        <tr id="d{{ ds.id }}" style="display:none;background:var(--surface2)">
+          <td colspan="9" style="padding:1rem 1.25rem">
+            <div class="grid-2" style="gap:1.5rem">
+              <div>
+                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.5rem">Score breakdown</div>
+                {% for label, val in [('Skills match', ds.score_skills), ('Projects match', ds.score_projects), ('Internships', ds.score_internships if ds.score_internships else 0), ('Experience', ds.score_experience), ('GitHub', ds.score_github), ('CP score', ds.score_cp), ('CGPA', ds.score_cgpa)] %}
+                <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.4rem">
+                  <span style="width:130px;font-size:0.78rem;color:var(--muted2)">{{ label }}</span>
+                  <div class="score-bar" style="flex:1"><div class="score-fill medium" style="width:{{ val }}%"></div></div>
+                  <span style="width:36px;text-align:right;font-size:0.78rem;font-family:'DM Mono',monospace;color:var(--muted2)">{{ val|round(1) }}</span>
+                </div>
+                {% endfor %}
+              </div>
+              <div>
+                {% if ds.matched_list %}
+                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.5rem">Matched keywords</div>
+                <div style="margin-bottom:0.875rem">
+                  {% for kw in ds.matched_list[:12] %}
+                  <span class="badge badge-green" style="margin:2px">{{ kw }}</span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+                {% if ds.missing_list %}
+                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.5rem">Missing from resume</div>
+                <div style="margin-bottom:0.875rem">
+                  {% for kw in ds.missing_list[:8] %}
+                  <span class="badge badge-red" style="margin:2px">{{ kw }}</span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+                {% if ds.flags_list %}
+                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.5rem">Flags</div>
+                {% for f in ds.flags_list %}
+                <div style="font-size:0.78rem;color:var(--amber);background:rgba(251,191,36,0.07);padding:0.4rem 0.6rem;border-radius:6px;margin-bottom:4px">⚠ {{ f }}</div>
+                {% endfor %}
+                {% endif %}
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% else %}
-<div class="card" style="text-align:center;padding:2rem">
-  <p class="muted">No results yet. Run scoring to generate the shortlist.</p>
+<div class="card">
+  <div class="empty">
+    <div class="empty-icon">📊</div>
+    <div class="empty-title">No results yet</div>
+    <div class="empty-sub">Run scoring to generate the ranked shortlist</div>
+    {% if session.user_role == 'placement_cell' %}
+    <form method="POST" action="{{ url_for('drive.run_scoring', drive_id=drive.id) }}" style="display:inline">
+      <button class="btn btn-success" style="margin-top:1.25rem">Run scoring now</button>
+    </form>
+    {% endif %}
+  </div>
 </div>
 {% endif %}
+
+<script>
+function toggleDetail(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
+}
+function filterRows(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#results-table tbody tr:not([id])').forEach(row => {
+    const name = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+    row.style.display = name.includes(q) ? '' : 'none';
+  });
+}
+</script>
 {% endblock %}

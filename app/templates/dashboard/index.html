@@ -1,45 +1,106 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Dashboard — PlaceIQ{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('drive.new_drive') }}" class="btn btn-primary btn-sm">
+    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+    New drive
+  </a>
+{% endblock %}
 {% block content %}
-<div class="flex" style="justify-content:space-between;margin-bottom:1.5rem">
-  <div>
-    <h1>Placement cell dashboard</h1>
-    <p class="muted">{{ students_count }} students in database &nbsp;|&nbsp; {{ drives|length }} drives</p>
+
+<div class="stats-grid">
+  <div class="stat-card accent">
+    <div class="stat-label">Total students</div>
+    <div class="stat-value">{{ students_count }}</div>
+    <div class="stat-sub">in database</div>
   </div>
-  <div>
-    <a href="{{ url_for('drive.new_drive') }}" class="btn btn-primary">+ New drive</a>
-    <a href="{{ url_for('auth.create_hr_user') }}" class="btn btn-outline" style="margin-left:0.5rem">+ HR login</a>
+  <div class="stat-card">
+    <div class="stat-label">Active drives</div>
+    <div class="stat-value">{{ drives|length }}</div>
+    <div class="stat-sub">company drives</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">Total shortlisted</div>
+    <div class="stat-value">{{ drives|sum(attribute='shortlist_count') }}</div>
+    <div class="stat-sub">across all drives</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">System</div>
+    <div class="stat-value" style="font-size:1rem;color:var(--accent2);margin-top:0.5rem">Active</div>
+    <div class="stat-sub">scoring engine ready</div>
   </div>
 </div>
 
 {% if drives %}
 <div class="card">
-  <table>
-    <thead>
-      <tr><th>Company</th><th>Role</th><th>Shortlist</th><th>Created</th><th>Actions</th></tr>
-    </thead>
-    <tbody>
-      {% for d in drives %}
-      <tr>
-        <td><strong>{{ d.company_name }}</strong></td>
-        <td>{{ d.role_title or '—' }}</td>
-        <td>{{ d.shortlist_count }}</td>
-        <td class="muted">{{ d.created_at.strftime('%d %b %Y') }}</td>
-        <td>
-          <a href="{{ url_for('dashboard.drive_detail', drive_id=d.id) }}" class="btn btn-outline btn-sm">View</a>
-          <form method="POST" action="{{ url_for('drive.run_scoring', drive_id=d.id) }}" style="display:inline">
-            <button class="btn btn-success btn-sm" onclick="return confirm('Run scoring for {{ d.company_name }}?')">Run scoring</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card-header">
+    <div>
+      <div class="card-title">Company drives</div>
+      <div class="card-sub">Click a drive to view the ranked shortlist</div>
+    </div>
+    <a href="{{ url_for('drive.new_drive') }}" class="btn btn-ghost btn-sm">+ New drive</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Role</th>
+          <th>Shortlist</th>
+          <th>Min CGPA</th>
+          <th>Branches</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in drives %}
+        <tr>
+          <td>
+            <a href="{{ url_for('dashboard.drive_detail', drive_id=d.id) }}" style="color:var(--text);text-decoration:none;font-weight:500">
+              {{ d.company_name }}
+            </a>
+          </td>
+          <td style="color:var(--muted2)">{{ d.role_title or '—' }}</td>
+          <td><span class="badge badge-blue">{{ d.shortlist_count }}</span></td>
+          <td>{{ d.min_cgpa or '—' }}</td>
+          <td>
+            {% if d.allowed_branches %}
+              {% set branches = d.allowed_branches|tojson|fromjson %}
+              {% if branches %}
+                {% for b in branches[:3] %}<span class="badge badge-gray" style="margin-right:2px">{{ b }}</span>{% endfor %}
+                {% if branches|length > 3 %}<span class="muted">+{{ branches|length - 3 }}</span>{% endif %}
+              {% else %}
+                <span class="muted">All</span>
+              {% endif %}
+            {% else %}
+              <span class="muted">All</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--muted)">{{ d.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <div class="flex gap-sm">
+              <a href="{{ url_for('dashboard.drive_detail', drive_id=d.id) }}" class="btn btn-ghost btn-sm">View</a>
+              <form method="POST" action="{{ url_for('drive.run_scoring', drive_id=d.id) }}" style="display:inline">
+                <button class="btn btn-success btn-sm" onclick="return confirm('Run scoring for {{ d.company_name }}?')">Score</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% else %}
-<div class="card" style="text-align:center;padding:3rem">
-  <p class="muted">No drives yet. Create your first drive to get started.</p>
-  <a href="{{ url_for('drive.new_drive') }}" class="btn btn-primary mt1">+ New drive</a>
+<div class="card">
+  <div class="empty">
+    <div class="empty-icon">🎯</div>
+    <div class="empty-title">No drives yet</div>
+    <div class="empty-sub">Create your first company drive to get started</div>
+    <a href="{{ url_for('drive.new_drive') }}" class="btn btn-primary" style="margin-top:1.25rem">+ Create drive</a>
+  </div>
 </div>
 {% endif %}
 {% endblock %}

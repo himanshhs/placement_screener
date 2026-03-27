@@ -1,125 +1,100 @@
 {% extends "base.html" %}
-{% block title %}{{ student.name }} — Profile{% endblock %}
+{% block title %}{{ student.name }} — PlaceIQ{% endblock %}
+{% block topbar_title %}{{ student.name }}{% endblock %}
+{% block topbar_actions %}
+  <form method="POST" action="{{ url_for('student.refresh_signals', student_id=student.id) }}" style="display:inline">
+    <button class="btn btn-ghost btn-sm">Refresh signals</button>
+  </form>
+  <a href="{{ url_for('dashboard.students') }}" class="btn btn-ghost btn-sm">← Back</a>
+{% endblock %}
 {% block content %}
 
-<div class="flex" style="justify-content:space-between;margin-bottom:1.5rem;align-items:flex-start">
-  <div>
-    <h1>{{ student.name }}</h1>
-    <p class="muted">{{ student.erp_id }} &nbsp;|&nbsp; {{ student.branch or '—' }} &nbsp;|&nbsp; Year {{ student.year or '—' }}</p>
-  </div>
-  <div style="display:flex;gap:0.5rem">
-    <form method="POST" action="{{ url_for('student.refresh_signals', student_id=student.id) }}">
-      <button class="btn btn-outline">Refresh signals</button>
-    </form>
-    <a href="{{ url_for('dashboard.students') }}" class="btn btn-outline">Back</a>
-  </div>
-</div>
-
-<div class="grid-2">
+<div class="grid-2" style="gap:1.25rem;align-items:start">
   <div>
     <div class="card">
-      <h2>Academic</h2>
-      <table style="font-size:0.88rem">
-        <tr><td class="muted" style="width:140px">Email</td><td>{{ student.email }}</td></tr>
-        <tr><td class="muted">CGPA</td><td><strong>{{ student.cgpa or '—' }}</strong></td></tr>
-        <tr><td class="muted">Backlogs</td>
-          <td>{% if student.backlogs %}<span class="badge badge-red">{{ student.backlogs }}</span>{% else %}0{% endif %}</td></tr>
-        <tr><td class="muted">10th %</td><td>{{ student.tenth_pct or '—' }}</td></tr>
-        <tr><td class="muted">12th %</td><td>{{ student.twelfth_pct or '—' }}</td></tr>
+      <h2>Academic details</h2>
+      <table style="font-size:0.85rem">
+        {% for label, val in [('ERP ID', student.erp_id), ('Email', student.email), ('Branch', student.branch or '—'), ('Year', student.year or '—')] %}
+        <tr><td style="color:var(--muted);padding:0.4rem 0;width:130px">{{ label }}</td><td style="padding:0.4rem 0">{{ val }}</td></tr>
+        {% endfor %}
+        <tr><td style="color:var(--muted);padding:0.4rem 0">CGPA</td>
+          <td style="padding:0.4rem 0;font-family:'DM Mono',monospace;font-weight:600;color:{% if student.cgpa and student.cgpa >= 8.5 %}var(--accent2){% elif student.cgpa and student.cgpa >= 7.0 %}var(--accent){% else %}var(--amber){% endif %}">
+            {{ student.cgpa or '—' }}
+          </td></tr>
+        <tr><td style="color:var(--muted);padding:0.4rem 0">Backlogs</td>
+          <td style="padding:0.4rem 0">
+            {% if student.backlogs %}<span class="badge badge-red">{{ student.backlogs }}</span>{% else %}0{% endif %}
+          </td></tr>
+        <tr><td style="color:var(--muted);padding:0.4rem 0">10th %</td><td style="padding:0.4rem 0">{{ student.tenth_pct or '—' }}</td></tr>
+        <tr><td style="color:var(--muted);padding:0.4rem 0">12th %</td><td style="padding:0.4rem 0">{{ student.twelfth_pct or '—' }}</td></tr>
       </table>
     </div>
 
     <div class="card">
       <h2>External profiles</h2>
-      <table style="font-size:0.88rem">
-        {% if student.github_url %}
-        <tr><td class="muted" style="width:140px">GitHub</td>
-          <td><a href="{{ student.github_url }}" target="_blank">{{ student.github_url.split('/')[-1] }}</a></td></tr>
-        {% endif %}
-        {% if student.linkedin_url %}
-        <tr><td class="muted">LinkedIn</td>
-          <td><a href="{{ student.linkedin_url }}" target="_blank">View profile</a></td></tr>
-        {% endif %}
-        {% if student.leetcode_user %}
-        <tr><td class="muted">LeetCode</td><td>{{ student.leetcode_user }}</td></tr>
-        {% endif %}
-        {% if student.codeforces_user %}
-        <tr><td class="muted">Codeforces</td><td>{{ student.codeforces_user }}</td></tr>
-        {% endif %}
-      </table>
+      {% if student.github_url %}<div style="margin-bottom:0.5rem"><span class="badge badge-gray" style="margin-right:0.4rem">GitHub</span><a href="{{ student.github_url }}" target="_blank" style="color:var(--accent);font-size:0.83rem">{{ student.github_url.split('/')[-1] }}</a></div>{% endif %}
+      {% if student.linkedin_url %}<div style="margin-bottom:0.5rem"><span class="badge badge-gray" style="margin-right:0.4rem">LinkedIn</span><a href="{{ student.linkedin_url }}" target="_blank" style="color:var(--accent);font-size:0.83rem">View profile</a></div>{% endif %}
+      {% if student.leetcode_user %}<div style="margin-bottom:0.5rem"><span class="badge badge-gray" style="margin-right:0.4rem">LeetCode</span><span style="font-size:0.83rem;color:var(--muted2)">{{ student.leetcode_user }}</span></div>{% endif %}
+      {% if student.codeforces_user %}<div style="margin-bottom:0.5rem"><span class="badge badge-gray" style="margin-right:0.4rem">Codeforces</span><span style="font-size:0.83rem;color:var(--muted2)">{{ student.codeforces_user }}</span></div>{% endif %}
+      {% if not student.github_url and not student.leetcode_user %}<p class="muted">No external profiles linked.</p>{% endif %}
     </div>
 
     <div class="card">
-      <h2>Upload / update resume</h2>
+      <h2>Update resume</h2>
       <form method="POST" action="{{ url_for('student.upload_resume', student_id=student.id) }}" enctype="multipart/form-data">
-        <input type="file" name="resume" accept=".pdf" style="margin-bottom:0.75rem">
+        <input type="file" name="resume" accept=".pdf">
         <button class="btn btn-primary btn-sm">Upload PDF</button>
       </form>
     </div>
   </div>
 
   <div>
-    {% if student.github_signal %}
-    {% set gh = student.github_signal %}
+    {% if student.github_signal %}{% set gh = student.github_signal %}
     <div class="card">
-      <div class="flex" style="justify-content:space-between;margin-bottom:0.75rem">
-        <h2 style="margin:0">GitHub signals</h2>
-        <span style="font-size:1.4rem;font-weight:700;color:#1e3a5f">{{ gh.github_score|round(1) }}<span style="font-size:0.85rem;font-weight:400;color:#999">/100</span></span>
+      <div class="flex-between mb-1">
+        <h2 style="margin:0">GitHub activity</h2>
+        <span style="font-size:1.5rem;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent)">{{ gh.github_score|round(1) }}<span style="font-size:0.8rem;font-weight:400;color:var(--muted)">/100</span></span>
       </div>
-      <table style="font-size:0.88rem">
-        <tr><td class="muted" style="width:180px">Commits (90 days)</td><td>{{ gh.total_commits_90d }}</td></tr>
-        <tr><td class="muted">Public repos</td><td>{{ gh.total_repos }}</td></tr>
-        <tr><td class="muted">Languages</td><td>{{ gh.unique_languages }}</td></tr>
-        <tr><td class="muted">Longest streak</td><td>{{ gh.longest_streak_days }} days</td></tr>
-        <tr><td class="muted">Last commit</td><td>{{ gh.days_since_last_commit }} days ago</td></tr>
+      <div class="score-bar mb-1"><div class="score-fill medium" style="width:{{ gh.github_score }}%"></div></div>
+      <table style="font-size:0.83rem;margin-top:0.75rem">
+        {% for label, val in [('Commits (90 days)', gh.total_commits_90d), ('Public repos', gh.total_repos), ('Languages used', gh.unique_languages), ('Longest streak', gh.longest_streak_days|string + ' days'), ('Last commit', gh.days_since_last_commit|string + ' days ago')] %}
+        <tr><td style="color:var(--muted);padding:0.3rem 0;width:160px">{{ label }}</td><td style="padding:0.3rem 0;font-family:'DM Mono',monospace">{{ val }}</td></tr>
+        {% endfor %}
       </table>
     </div>
     {% endif %}
 
-    {% if student.cp_signal %}
-    {% set cp = student.cp_signal %}
+    {% if student.cp_signal %}{% set cp = student.cp_signal %}
     <div class="card">
-      <div class="flex" style="justify-content:space-between;margin-bottom:0.75rem">
-        <h2 style="margin:0">CP signals</h2>
+      <div class="flex-between mb-1">
+        <h2 style="margin:0">CP performance</h2>
         <div style="text-align:right">
-          <span style="font-size:1.4rem;font-weight:700;color:#1e3a5f">{{ cp.cp_score|round(1) }}<span style="font-size:0.85rem;font-weight:400;color:#999">/100</span></span>
-          {% if cp.flag_suspicious %}
-          <br><span class="badge badge-red" style="font-size:0.72rem">Authenticity concern</span>
-          {% else %}
-          <br><span class="badge badge-green" style="font-size:0.72rem">Authentic</span>
-          {% endif %}
+          <span style="font-size:1.5rem;font-weight:700;font-family:'DM Mono',monospace;color:{% if cp.flag_suspicious %}var(--red){% else %}var(--accent2){% endif %}">{{ cp.cp_score|round(1) }}<span style="font-size:0.8rem;font-weight:400;color:var(--muted)">/100</span></span>
+          <br>{% if cp.flag_suspicious %}<span class="badge badge-red" style="font-size:0.68rem">⚠ authenticity concern</span>{% else %}<span class="badge badge-green" style="font-size:0.68rem">authentic</span>{% endif %}
         </div>
       </div>
-      <table style="font-size:0.88rem">
-        <tr><td class="muted" style="width:180px">LC Easy/Med/Hard</td>
-          <td>{{ cp.lc_solved_easy }} / {{ cp.lc_solved_medium }} / {{ cp.lc_solved_hard }}</td></tr>
-        <tr><td class="muted">LC contest rating</td><td>{{ cp.lc_contest_rating|round }}</td></tr>
-        <tr><td class="muted">Avg attempts/problem</td><td>{{ cp.lc_avg_attempts_per_problem }}</td></tr>
-        <tr><td class="muted">CF rating</td><td>{{ cp.cf_rating }}</td></tr>
-        <tr><td class="muted">Contests attended</td>
-          <td>{{ (cp.lc_contests_attended or 0) + (cp.cf_contests_attended or 0) }}</td></tr>
+      <div class="score-bar mb-1"><div class="score-fill {{ 'vlow' if cp.flag_suspicious else 'high' }}" style="width:{{ cp.cp_score }}%"></div></div>
+      <table style="font-size:0.83rem;margin-top:0.75rem">
+        <tr><td style="color:var(--muted);padding:0.3rem 0;width:180px">LC Easy / Med / Hard</td><td style="padding:0.3rem 0;font-family:'DM Mono',monospace">{{ cp.lc_solved_easy }} / {{ cp.lc_solved_medium }} / {{ cp.lc_solved_hard }}</td></tr>
+        <tr><td style="color:var(--muted);padding:0.3rem 0">Avg attempts/problem</td><td style="padding:0.3rem 0;font-family:'DM Mono',monospace;color:{% if cp.lc_avg_attempts_per_problem < 1.1 %}var(--red){% elif cp.lc_avg_attempts_per_problem < 1.3 %}var(--amber){% else %}var(--accent2){% endif %}">{{ cp.lc_avg_attempts_per_problem }}</td></tr>
+        <tr><td style="color:var(--muted);padding:0.3rem 0">LC contest rating</td><td style="padding:0.3rem 0;font-family:'DM Mono',monospace">{{ cp.lc_contest_rating|round|int }}</td></tr>
+        <tr><td style="color:var(--muted);padding:0.3rem 0">CF rating</td><td style="padding:0.3rem 0;font-family:'DM Mono',monospace">{{ cp.cf_rating }}</td></tr>
+        <tr><td style="color:var(--muted);padding:0.3rem 0">Total contests</td><td style="padding:0.3rem 0;font-family:'DM Mono',monospace">{{ (cp.lc_contests_attended or 0) + (cp.cf_contests_attended or 0) }}</td></tr>
       </table>
-      {% if cp.flag_reason and cp.flag_suspicious %}
-      <p style="margin-top:0.75rem;font-size:0.8rem;color:#c62828;background:#ffebee;padding:0.5rem 0.75rem;border-radius:6px">{{ cp.flag_reason }}</p>
+      {% if cp.flag_suspicious and cp.flag_reason %}
+      <div style="margin-top:0.75rem;font-size:0.78rem;color:var(--red);background:rgba(248,113,113,0.07);padding:0.5rem 0.75rem;border-radius:6px">{{ cp.flag_reason }}</div>
       {% endif %}
     </div>
     {% endif %}
 
-    {% if student.resume %}
-    {% set r = student.resume %}
+    {% if student.resume %}{% set r = student.resume %}
     <div class="card">
-      <h2>Resume sections parsed</h2>
-      {% for label, text in [
-        ('Skills', r.raw_skills), ('Projects', r.raw_projects),
-        ('Internships', r.raw_internships), ('Experience', r.raw_experience),
-        ('Certifications', r.raw_certifications), ('Education', r.raw_education)
-      ] %}
+      <h2>Resume sections</h2>
+      {% for label, text in [('Skills', r.raw_skills), ('Projects', r.raw_projects), ('Internships', r.raw_internships), ('Experience', r.raw_experience), ('Certifications', r.raw_certifications), ('Education', r.raw_education)] %}
       {% if text %}
-      <div style="margin-bottom:0.75rem">
+      <div style="margin-bottom:0.875rem">
         <span class="badge badge-blue" style="margin-bottom:0.3rem">{{ label }}</span>
-        <p style="font-size:0.8rem;color:#555;line-height:1.5;max-height:60px;overflow:hidden">
-          {{ text[:200] }}{% if text|length > 200 %}…{% endif %}
-        </p>
+        <p style="font-size:0.78rem;color:var(--muted2);line-height:1.5;margin-top:0.3rem;max-height:48px;overflow:hidden">{{ text[:180] }}{% if text|length > 180 %}…{% endif %}</p>
       </div>
       {% endif %}
       {% endfor %}
