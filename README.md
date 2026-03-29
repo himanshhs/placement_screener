@@ -86,12 +86,14 @@ Final Score =
 
 ## 📸 Screenshots
 
-> *(Add these before final submission)*
+- Dashboard UI 
+<img width="1919" height="968" alt="image" src="https://github.com/user-attachments/assets/ccb6060d-9286-44d6-93f8-f3967e61463b" />
 
-- Dashboard UI  
-- Drive Creation Page  
-- Scoring Results Table  
-- Exported Excel Preview  
+- Drive Creation Page
+  <img width="1913" height="962" alt="image" src="https://github.com/user-attachments/assets/7e5be996-8601-4e9b-83f2-8c13144a805e" />
+
+- Scoring Results Table
+  <img width="1919" height="952" alt="image" src="https://github.com/user-attachments/assets/0dde129d-f764-4ce1-857b-ff739e32bdf6" />
 
 ---
 
