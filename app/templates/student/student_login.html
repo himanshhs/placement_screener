@@ -4,15 +4,15 @@
   <div style="width:100%;max-width:400px;padding:1.5rem">
     <div style="text-align:center;margin-bottom:2rem">
       <div style="font-size:1.6rem;font-weight:700;letter-spacing:-0.5px;color:var(--text)">Place<span style="color:var(--accent)">IQ</span></div>
-      <p style="color:var(--muted);font-size:0.85rem;margin-top:0.4rem">Placement Intelligence System</p>
+      <p style="color:var(--muted);font-size:0.85rem;margin-top:0.4rem">Student Portal</p>
     </div>
     <div class="card">
-      <h2 style="margin-bottom:1.25rem">Sign in to continue</h2>
+      <h2 style="margin-bottom:1.25rem">Student sign in</h2>
       {% for cat, msg in get_flashed_messages(with_categories=True) %}
       <div class="flash {{ cat }}" style="margin-bottom:1rem">{{ msg }}</div>
       {% endfor %}
       <form method="POST">
-        <label>Email address</label>
+        <label>College email</label>
         <input type="email" name="email" required autofocus placeholder="you@college.edu">
         <label>Password</label>
         <input type="password" name="password" required placeholder="••••••••">
@@ -20,9 +20,9 @@
       </form>
     </div>
     <p style="text-align:center;font-size:0.78rem;color:var(--muted);margin-top:1rem">
-      Student? <a href="{{ url_for('student.student_login') }}" style="color:var(--accent)">Student portal</a>
+      New student? <a href="{{ url_for('student.register') }}" style="color:var(--accent)">Register here</a>
       &nbsp;·&nbsp;
-      <a href="{{ url_for('student.register') }}" style="color:var(--muted)">Register</a>
+      <a href="{{ url_for('auth.login') }}" style="color:var(--muted)">Placement cell login</a>
     </p>
   </div>
 </div>

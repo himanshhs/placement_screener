@@ -85,6 +85,9 @@
               <form method="POST" action="{{ url_for('drive.run_scoring', drive_id=d.id) }}" style="display:inline">
                 <button class="btn btn-success btn-sm" onclick="return confirm('Run scoring for {{ d.company_name }}?')">Score</button>
               </form>
+              <form method="POST" action="{{ url_for('drive.delete_drive', drive_id=d.id) }}" style="display:inline">
+                <button class="btn btn-danger btn-sm" onclick="return confirm('Delete {{ d.company_name }} drive? This cannot be undone.')">Delete</button>
+              </form>
             </div>
           </td>
         </tr>

@@ -8,15 +8,21 @@
       <p style="color:var(--muted);font-size:0.83rem;margin-top:0.3rem">Student registration</p>
     </div>
     {% for cat, msg in get_flashed_messages(with_categories=True) %}
-    <div class="flash {{ cat }}" style="margin-bottom:1rem">{{ msg }}</div>
+    <div class="flash {{ cat }}" style="margin-bottom:0.75rem">{{ msg }}</div>
     {% endfor %}
     <form method="POST" enctype="multipart/form-data">
       <div class="card">
-        <h3>Academic details</h3>
+        <h3 style="font-size:0.85rem;font-weight:600;margin-bottom:1rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px">Account</h3>
         <div class="grid-2">
           <div><label>ERP / Roll number *</label><input type="text" name="erp_id" required placeholder="e.g. CS2021045"></div>
           <div><label>Full name *</label><input type="text" name="name" required></div>
-          <div><label>College email *</label><input type="email" name="email" required></div>
+          <div><label>College email *</label><input type="email" name="email" required placeholder="you@college.edu"></div>
+          <div><label>Password *</label><input type="password" name="password" required placeholder="Set a password to log in later"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.85rem;font-weight:600;margin-bottom:1rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px">Academic details</h3>
+        <div class="grid-2">
           <div><label>Branch</label>
             <select name="branch">
               <option value="">Select branch</option>
@@ -31,14 +37,13 @@
             </select></div>
           <div><label>CGPA (out of 10)</label><input type="number" name="cgpa" min="0" max="10" step="0.01"></div>
           <div><label>Active backlogs</label><input type="number" name="backlogs" min="0" value="0"></div>
-          <div></div>
           <div><label>10th percentage</label><input type="number" name="tenth_pct" min="0" max="100" step="0.01"></div>
           <div><label>12th percentage</label><input type="number" name="twelfth_pct" min="0" max="100" step="0.01"></div>
         </div>
       </div>
       <div class="card">
-        <h3>External profiles</h3>
-        <p class="muted mb-1" style="font-size:0.78rem">Used to fetch technical activity signals automatically</p>
+        <h3 style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px">External profiles</h3>
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem">Used to fetch your technical activity automatically. You can add these later too.</p>
         <div class="grid-2">
           <div><label>GitHub URL</label><input type="url" name="github_url" placeholder="https://github.com/username"></div>
           <div><label>LinkedIn URL</label><input type="url" name="linkedin_url" placeholder="https://linkedin.com/in/..."></div>
@@ -48,15 +53,73 @@
         </div>
       </div>
       <div class="card">
-        <h3>Resume</h3>
-        <p class="muted mb-1" style="font-size:0.78rem">Upload PDF — parsed automatically into sections</p>
+        <h3 style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px">Resume</h3>
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.875rem">Upload PDF — parsed automatically. You can upload later from your profile.</p>
         <input type="file" name="resume" accept=".pdf">
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:0.7rem;font-size:0.9rem;justify-content:center">Submit registration</button>
+      <button class="btn btn-primary" style="width:100%;padding:0.7rem;font-size:0.9rem;justify-content:center">Create account</button>
     </form>
     <p style="text-align:center;font-size:0.78rem;color:var(--muted);margin-top:1rem">
-      <a href="{{ url_for('auth.login') }}" style="color:var(--accent)">← Back to login</a>
+      Already registered? <a href="{{ url_for('student.student_login') }}" style="color:var(--accent)">Sign in</a>
+      &nbsp;·&nbsp;
+      <a href="{{ url_for('auth.login') }}" style="color:var(--muted)">Placement cell login</a>
     </p>
   </div>
+</div>
+{% endblock %}
+{% block content %}
+<div style="max-width:660px">
+  <p class="muted mb-1">Register a new student manually.</p>
+  {% for cat, msg in get_flashed_messages(with_categories=True) %}
+  <div class="flash {{ cat }}" style="margin-bottom:0.75rem">{{ msg }}</div>
+  {% endfor %}
+  <form method="POST" enctype="multipart/form-data">
+    <div class="card">
+      <h2>Account</h2>
+      <div class="grid-2">
+        <div><label>ERP / Roll number *</label><input type="text" name="erp_id" required placeholder="e.g. CS2021045"></div>
+        <div><label>Full name *</label><input type="text" name="name" required></div>
+        <div><label>College email *</label><input type="email" name="email" required></div>
+        <div><label>Password *</label><input type="password" name="password" required placeholder="Student will use this to log in"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Academic details</h2>
+      <div class="grid-2">
+        <div><label>Branch</label>
+          <select name="branch">
+            <option value="">Select</option>
+            {% for b in ['CSE','IT','ECE','EE','ME','CE','AIDS','AIML','DS'] %}
+            <option value="{{ b }}">{{ b }}</option>
+            {% endfor %}
+          </select></div>
+        <div><label>Year</label>
+          <select name="year">
+            <option value="">Select</option>
+            {% for y in [1,2,3,4] %}<option value="{{ y }}">Year {{ y }}</option>{% endfor %}
+          </select></div>
+        <div><label>CGPA</label><input type="number" name="cgpa" min="0" max="10" step="0.01"></div>
+        <div><label>Backlogs</label><input type="number" name="backlogs" min="0" value="0"></div>
+        <div><label>10th %</label><input type="number" name="tenth_pct" min="0" max="100" step="0.01"></div>
+        <div><label>12th %</label><input type="number" name="twelfth_pct" min="0" max="100" step="0.01"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>External profiles</h2>
+      <div class="grid-2">
+        <div><label>GitHub URL</label><input type="url" name="github_url"></div>
+        <div><label>LinkedIn URL</label><input type="url" name="linkedin_url"></div>
+        <div><label>LeetCode username</label><input type="text" name="leetcode_user"></div>
+        <div><label>Codeforces handle</label><input type="text" name="codeforces_user"></div>
+        <div><label>CodeChef username</label><input type="text" name="codechef_user"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Resume PDF</h2>
+      <input type="file" name="resume" accept=".pdf">
+    </div>
+    <button class="btn btn-primary" style="padding:0.6rem 1.5rem">Register student</button>
+    <a href="{{ url_for('dashboard.students') }}" class="btn btn-ghost" style="margin-left:0.5rem">Cancel</a>
+  </form>
 </div>
 {% endblock %}

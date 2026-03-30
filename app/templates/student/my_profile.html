@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile — PlaceIQ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0f1117;--surface:#181c27;--surface2:#1e2336;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--accent:#6c8cff;--accent2:#4ade80;--red:#f87171;--amber:#fbbf24;--text:#e8eaf2;--muted:#6b7280;--muted2:#9ca3af;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+    .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;}
+    .logo{font-size:1rem;font-weight:700;}
+    .logo span{color:var(--accent);}
+    .page{max-width:800px;margin:0 auto;padding:2rem 1.5rem;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.25rem;}
+    .badge{display:inline-flex;align-items:center;padding:0.18rem 0.55rem;border-radius:20px;font-size:0.72rem;font-weight:500;}
+    .badge-blue{background:rgba(108,140,255,0.15);color:#6c8cff;}
+    .badge-green{background:rgba(74,222,128,0.12);color:#4ade80;}
+    .badge-amber{background:rgba(251,191,36,0.12);color:#fbbf24;}
+    .badge-red{background:rgba(248,113,113,0.12);color:#f87171;}
+    .badge-gray{background:rgba(255,255,255,0.06);color:var(--muted2);}
+    .btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.45rem 1rem;border-radius:8px;border:none;cursor:pointer;font-size:0.83rem;font-weight:500;font-family:inherit;text-decoration:none;transition:all 0.15s;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-ghost{background:var(--surface2);color:var(--muted2);border:1px solid var(--border2);}
+    .btn-danger{background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.2);}
+    label{display:block;font-size:0.78rem;font-weight:500;color:var(--muted2);margin-bottom:0.35rem;}
+    input[type=text],input[type=url],input[type=file]{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-size:0.85rem;font-family:inherit;margin-bottom:0.875rem;outline:none;}
+    input[type=file]{color:var(--muted2);cursor:pointer;border-style:dashed;}
+    input:focus{border-color:var(--accent);}
+    .flash{padding:0.65rem 1rem;border-radius:8px;font-size:0.83rem;margin-bottom:0.75rem;}
+    .flash.success{background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);color:#4ade80;}
+    .flash.danger{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);color:#f87171;}
+    .flash.warning{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.2);color:#fbbf24;}
+    .flash.info{background:rgba(108,140,255,0.1);border:1px solid rgba(108,140,255,0.2);color:#6c8cff;}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+    h2{font-size:1rem;font-weight:600;margin-bottom:0.875rem;}
+    h3{font-size:0.875rem;font-weight:600;margin-bottom:0.5rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px;}
+    .muted{color:var(--muted);font-size:0.82rem;}
+    .score-bar{background:var(--surface2);border-radius:4px;height:5px;width:100%;margin-top:4px;}
+    .score-fill{height:5px;border-radius:4px;background:var(--accent);}
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">Place<span>IQ</span> <span style="color:var(--muted);font-weight:400;font-size:0.82rem">/ Student Portal</span></div>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <span style="color:var(--muted2);font-size:0.83rem">{{ student.name }}</span>
+    <a href="{{ url_for('student.student_logout') }}" class="btn btn-ghost" style="font-size:0.78rem;padding:0.3rem 0.75rem">Sign out</a>
+  </div>
+</div>
+<div class="page">
+  {% for cat, msg in get_flashed_messages(with_categories=True) %}
+  <div class="flash {{ cat }}">{{ msg }}</div>
+  {% endfor %}
+
+  <div style="margin-bottom:1.5rem">
+    <h2 style="font-size:1.3rem;margin:0">{{ student.name }}</h2>
+    <p class="muted" style="margin-top:0.25rem">{{ student.erp_id }} · {{ student.branch or '—' }} · Year {{ student.year or '—' }}</p>
+  </div>
+
+  <div class="grid-2" style="align-items:start">
+    <div>
+      <div class="card">
+        <h2>Academic details</h2>
+        <table style="font-size:0.85rem;width:100%">
+          {% for label, val in [('Email', student.email), ('CGPA', student.cgpa or '—'), ('Backlogs', student.backlogs or 0), ('10th %', student.tenth_pct or '—'), ('12th %', student.twelfth_pct or '—')] %}
+          <tr><td style="color:var(--muted);padding:0.35rem 0;width:120px">{{ label }}</td><td style="padding:0.35rem 0;font-weight:{% if label=='CGPA' %}600{% else %}400{% endif %}">{{ val }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Update external links</h2>
+        <form method="POST" action="{{ url_for('student.edit_links') }}">
+          {% for label, name, placeholder in [
+            ('GitHub URL', 'github_url', 'https://github.com/username'),
+            ('LinkedIn URL', 'linkedin_url', 'https://linkedin.com/in/...'),
+            ('LeetCode username', 'leetcode_user', 'your-lc-username'),
+            ('Codeforces handle', 'codeforces_user', 'your-cf-handle'),
+            ('CodeChef username', 'codechef_user', 'your-cc-username'),
+          ] %}
+          <label>{{ label }}</label>
+          <input type="{{ 'url' if 'URL' in label else 'text' }}"
+                 name="{{ name }}"
+                 value="{{ getattr(student, name) or '' }}"
+                 placeholder="{{ placeholder }}">
+          {% endfor %}
+          <button class="btn btn-primary" style="width:100%;justify-content:center">Save links</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Upload / update resume</h2>
+        <p class="muted" style="font-size:0.8rem;margin-bottom:0.875rem">
+          {% if student.resume and student.resume.parsed_at %}
+            Last parsed: {{ student.resume.parsed_at.strftime('%d %b %Y') }}
+          {% else %}
+            No resume uploaded yet
+          {% endif %}
+        </p>
+        <form method="POST" action="{{ url_for('student.my_upload_resume') }}" enctype="multipart/form-data">
+          <input type="file" name="resume" accept=".pdf">
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:0.25rem">Upload PDF</button>
+        </form>
+      </div>
+    </div>
+
+    <div>
+      {% if insights %}
+      <div class="card">
+        <h2>Resume insights</h2>
+        <p class="muted" style="font-size:0.78rem;margin-bottom:1rem">Keywords extracted from your uploaded resume</p>
+        {% for section, keywords in insights.items() %}
+        {% if keywords %}
+        <div style="margin-bottom:1rem">
+          <h3>{{ section }}</h3>
+          <div>
+            {% for kw in keywords %}
+            <span class="badge badge-{{ 'blue' if section=='Skills' else 'green' if section=='Projects' else 'amber' if section=='Internships' else 'gray' }}" style="margin:2px">{{ kw }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="card" style="text-align:center;padding:2.5rem">
+        <div style="font-size:2rem;opacity:0.2;margin-bottom:0.75rem">📄</div>
+        <p style="color:var(--muted2);font-size:0.85rem">Upload your resume PDF to see extracted insights</p>
+      </div>
+      {% endif %}
+
+      {% if student.github_signal %}{% set gh = student.github_signal %}
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+          <h2 style="margin:0">GitHub</h2>
+          <span style="font-size:1.3rem;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent)">{{ gh.github_score|round(1) }}/100</span>
+        </div>
+        <div class="score-bar"><div class="score-fill" style="width:{{ gh.github_score }}%"></div></div>
+        <p class="muted" style="font-size:0.78rem;margin-top:0.5rem">{{ gh.total_commits_90d }} commits in 90 days · {{ gh.unique_languages }} languages</p>
+      </div>
+      {% endif %}
+
+      {% if student.cp_signal %}{% set cp = student.cp_signal %}
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+          <h2 style="margin:0">CP performance</h2>
+          <span style="font-size:1.3rem;font-weight:700;font-family:'DM Mono',monospace;color:{% if cp.flag_suspicious %}var(--red){% else %}var(--accent2){% endif %}">{{ cp.cp_score|round(1) }}/100</span>
+        </div>
+        <div class="score-bar"><div class="score-fill" style="width:{{ cp.cp_score }}%;background:{% if cp.flag_suspicious %}var(--red){% else %}var(--accent2){% endif %}"></div></div>
+        <p class="muted" style="font-size:0.78rem;margin-top:0.5rem">
+          LC: {{ cp.lc_solved_easy }}E / {{ cp.lc_solved_medium }}M / {{ cp.lc_solved_hard }}H
+          · CF rating: {{ cp.cf_rating }}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+</body>
+</html>

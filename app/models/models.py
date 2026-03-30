@@ -249,7 +249,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     full_name     = db.Column(db.String(120))
 
-    # role: "placement_cell" or "company_hr"
+    # role: "placement_cell", "company_hr", or "student"
     role          = db.Column(db.String(20), nullable=False, default="company_hr")
 
     # for company HR — which drive they belong to

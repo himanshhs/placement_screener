@@ -87,14 +87,17 @@
     </div>
     {% endif %}
 
-    {% if student.resume %}{% set r = student.resume %}
+    {% if insights %}
     <div class="card">
-      <h2>Resume sections</h2>
-      {% for label, text in [('Skills', r.raw_skills), ('Projects', r.raw_projects), ('Internships', r.raw_internships), ('Experience', r.raw_experience), ('Certifications', r.raw_certifications), ('Education', r.raw_education)] %}
-      {% if text %}
+      <h2>Resume insights</h2>
+      <p style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem">Keywords extracted per section</p>
+      {% for section, keywords in insights.items() %}
+      {% if keywords %}
       <div style="margin-bottom:0.875rem">
-        <span class="badge badge-blue" style="margin-bottom:0.3rem">{{ label }}</span>
-        <p style="font-size:0.78rem;color:var(--muted2);line-height:1.5;margin-top:0.3rem;max-height:48px;overflow:hidden">{{ text[:180] }}{% if text|length > 180 %}…{% endif %}</p>
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.35rem">{{ section }}</div>
+        {% for kw in keywords %}
+        <span class="badge badge-{{ 'blue' if section=='Skills' else 'green' if section=='Projects' else 'amber' if section=='Internships' else 'purple' if section=='Certifications' else 'gray' }}" style="margin:2px">{{ kw }}</span>
+        {% endfor %}
       </div>
       {% endif %}
       {% endfor %}
