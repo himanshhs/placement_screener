@@ -151,7 +151,7 @@ def my_profile():
     from app.services.keyword_extractor import extract_section_insights
     insights = extract_section_insights(student.resume)
     return render_template("student/my_profile.html",
-                           student=student, insights=insights)
+                           student=student,getattr=getattr, insights=insights)
 
 
 # ── student edit links ──────────────────────────────────────────────────────

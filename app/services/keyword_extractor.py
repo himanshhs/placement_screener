@@ -244,7 +244,7 @@ def _extract_education(text: str, n: int = 5) -> list:
     result = []
     if degrees:   result.append(degrees[0].upper())
     if branches:  result.append(branches[0].upper())
-    raw_cgpa = cgpa_match.group(1).rstrip('.')
+    raw_cgpa = cgpa_match.group(1).rstrip('.') if cgpa_match else None
     if cgpa_match:result.append(f"CGPA {raw_cgpa}")
 
     # institution names — capitalised proper nouns
