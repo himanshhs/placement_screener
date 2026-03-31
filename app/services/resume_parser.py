@@ -17,9 +17,12 @@ from datetime import datetime
 SECTION_PATTERNS = {
     "skills": [
         r"technical\s*skills", r"core\s*skills",
+        r"skills\s*and\s*interests?",        # catches "SKILLS AND INTERESTS"
+        r"skills\s*&\s*interests?",
         r"skills\s*&?\s*technologies", r"skills\s*and\s*technologies",
-        r"technologies", r"tools\s*&?\s*technologies",
-        r"programming\s*languages", r"competencies", r"^skills$",
+        r"^technologies$",                   # anchored — avoids "Cognifyz Technologies"
+        r"tools\s*&?\s*technologies",
+        r"programming\s*languages", r"competencies", r"^skills?$",
     ],
     "projects": [
         r"projects?", r"personal\s*projects?", r"academic\s*projects?",
@@ -38,6 +41,8 @@ SECTION_PATTERNS = {
         r"professional\s*experience",
         r"employment(\s*history)?",
         r"^experience$",
+        r"career\s*history",
+        r"work\s*history",
     ],
     "certifications": [
         r"certifications?",
@@ -103,7 +108,13 @@ def _clean_text(text: str) -> str:
 
 def _detect_section(line: str):
     stripped = line.strip()
-    if not stripped or len(stripped) > 60 or stripped.endswith("."):
+    if not stripped or len(stripped) > 80:
+        return None
+    if stripped.endswith("."):
+        return None
+    # Lines with a colon mid-way are label:value content (e.g. "Technologies: Python")
+    # not section headings — skip them unless the colon is near the end
+    if ":" in stripped and not stripped.endswith(":"):
         return None
     for section, patterns in _COMPILED.items():
         for pattern in patterns:

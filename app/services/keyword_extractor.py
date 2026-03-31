@@ -105,45 +105,55 @@ def _extract_skills(text: str, n: int = 10) -> list:
 
 def _extract_projects(text: str, n: int = 8) -> list:
     """
-    For projects section: extract 2-3 gram noun phrases.
-    These capture what was built, not just what tech was used.
+    For projects section: extract project titles and tech stack terms.
+
+    Project titles are short lines that appear BEFORE the tech stack line
+    (which is a comma-separated list of tools on the next line).
+    We detect them as short lines with mixed/title case that are not
+    pure tech-stack lists and not long descriptive sentences.
     """
     if not text: return []
-    tokens = _tokens(text)
-
-    bigrams  = _ngrams(tokens, 2)
-    trigrams = _ngrams(tokens, 3)
-
-    # prefer trigrams that contain a meaningful action or domain noun
-    action_words = {
-        "analysis","detection","classification","prediction","generation",
-        "recognition","recommendation","tracking","monitoring","automation",
-        "processing","extraction","summarization","translation","optimization",
-        "visualisation","visualization","dashboard","pipeline","system","tool",
-        "platform","application","engine","framework","service","api","model",
-        "bot","scraper","tracker","manager","scheduler","simulator","calculator",
-    }
-
-    scored = []
-    for gram in trigrams + bigrams:
-        words = gram.split()
-        if any(w in action_words for w in words):
-            scored.append((2, gram))
-        else:
-            scored.append((1, gram))
-
-    # deduplicate — remove bigrams fully contained in a trigram
-    seen = set()
+    lines = text.split("\n")
     result = []
-    for _, gram in sorted(scored, key=lambda x: -x[0]):
-        words = gram.split()
-        if not any(w in seen for w in words):
-            result.append(gram)
-            seen.update(words)
+    seen_lower: set = set()
+
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line or line[0] in "•-–":
+            continue
+        if re.match(r'^\d', line):
+            continue
+        # Tech stack lines: comma-separated short tokens (e.g. "Python, Flask, NLP")
+        # Detect: most tokens are short and separated by commas
+        comma_parts = [p.strip() for p in line.split(",")]
+        if len(comma_parts) >= 3 and all(len(p) < 25 for p in comma_parts):
+            # It's a tech stack line — extract individual tech tokens instead
+            for part in comma_parts:
+                part_clean = part.strip("() ")
+                if part_clean and len(part_clean) > 1:
+                    pl = part_clean.lower()
+                    if pl not in seen_lower:
+                        result.append(_title(part_clean))
+                        seen_lower.add(pl)
+            continue
+        # Long descriptive sentences are bullet points, skip
+        if len(line) > 60:
+            continue
+        # Project title: must have at least one capital, reasonable length
+        if not re.search(r'[A-Z]', line):
+            continue
+        line_clean = re.sub(r'[&]', 'and', line).strip()
+        # Remove tech suffixes in parens e.g. "System (Python, Flask)"
+        line_clean = re.sub(r'\s*\(.*?\)', '', line_clean).strip()
+        ll = line_clean.lower()
+        if ll not in seen_lower and len(ll) > 3:
+            result.append(line_clean)
+            seen_lower.add(ll)
+
         if len(result) >= n:
             break
 
-    return [_title(k) for k in result[:n]]
+    return result[:n]
 
 
 def _extract_internships(text: str, n: int = 8) -> list:
@@ -172,23 +182,55 @@ def _extract_internships(text: str, n: int = 8) -> list:
 
 def _extract_experience(text: str, n: int = 8) -> list:
     """
-    For experience: action + domain bigrams and trigrams.
+    For experience: extract role titles and company names by reading
+    short capitalised lines (which is how every resume formats them)
+    rather than producing blind bigrams/trigrams from lowercased tokens.
     """
     if not text: return []
-    tokens = _tokens(text)
-    bigrams = _ngrams(tokens, 2)
-    trigrams = _ngrams(tokens, 3)
-    combined = trigrams[:3] + bigrams
-    seen = set()
     result = []
-    for gram in combined:
-        key = tuple(gram.split())
-        if key not in seen:
-            seen.add(key)
-            result.append(gram)
+    seen_lower: set = set()
+
+    # Words that appear in date lines, location lines, or generic labels
+    _noise = {
+        "the","and","for","with","at","to","of","a","an","in","on","by",
+        "built","led","applied","performed","developed","integrated",
+        "implemented","remote","jan","feb","mar","apr","may","jun","jul",
+        "aug","sep","oct","nov","dec","india","intern","training",
+        # Indian cities commonly appearing in resume location lines
+        "nagpur","mumbai","pune","delhi","bangalore","bengaluru","hyderabad",
+        "chennai","kolkata","ahmedabad","jaipur","lucknow","bhopal","indore",
+        "noida","gurugram","gurgaon","surat","vadodara","vizag","visakhapatnam",
+    }
+
+    for line in text.split("\n"):
+        line = line.strip()
+        # skip blank, bullet, or date lines
+        if not line or line[0] in "•-–" or re.match(r'^\d', line):
+            continue
+        # skip long descriptive sentences
+        if len(line) > 55:
+            continue
+        # must contain at least one capital letter (proper noun signal)
+        if not re.search(r'[A-Z]', line):
+            continue
+        line_clean = re.sub(r'[,;:.]$', '', line).strip()
+        words_lower = [w.lower().strip(".,;:") for w in line_clean.split()]
+        # skip lines that are entirely noise/stopwords
+        if all(w in _noise for w in words_lower):
+            continue
+        # Preserve genuine all-caps abbreviations (CEO, MVP, ML, AI …)
+        display = " ".join(
+            w if (w.isupper() and len(w) <= 4) else w.capitalize()
+            for w in line_clean.split()
+        )
+        ll = display.lower()
+        if ll not in seen_lower:
+            result.append(display)
+            seen_lower.add(ll)
         if len(result) >= n:
             break
-    return [_title(g) for g in result[:n]]
+
+    return result[:n]
 
 
 def _extract_certifications(text: str, n: int = 6) -> list:
@@ -242,17 +284,25 @@ def _extract_education(text: str, n: int = 5) -> list:
     )
 
     result = []
-    if degrees:   result.append(degrees[0].upper())
-    if branches:  result.append(branches[0].upper())
-    raw_cgpa = cgpa_match.group(1).rstrip('.') if cgpa_match else None
-    if cgpa_match:result.append(f"CGPA {raw_cgpa}")
+    seen_lower: set = set()
 
-    # institution names — capitalised proper nouns
+    def _add(item: str):
+        ll = item.lower()
+        if ll not in seen_lower:
+            result.append(item)
+            seen_lower.add(ll)
+
+    if degrees:   _add(degrees[0].upper())
+    if branches:  _add(branches[0].title())   # title-case, not ALL-CAPS
+    raw_cgpa = cgpa_match.group(1).rstrip('.') if cgpa_match else None
+    if cgpa_match: _add(f"CGPA {raw_cgpa}")
+
+    # institution names — capitalised proper nouns, deduped case-insensitively
     institutions = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b', text)
-    noise = {"June","July","August","May","The"}
+    noise = {"June","July","August","May","The","Data Science","Computer Science"}
     for inst in institutions:
-        if inst not in noise and inst not in result:
-            result.append(inst)
+        if inst not in noise:
+            _add(inst)
         if len(result) >= n:
             break
 
@@ -260,16 +310,47 @@ def _extract_education(text: str, n: int = 5) -> list:
 
 
 def _title(s: str) -> str:
-    """Smart title case — preserve known acronyms."""
+    """Smart title case — preserve known acronyms and non-standard casings."""
     acronyms = {"aws","gcp","nlp","sql","api","css","php","npm","iot",
                 "html","rest","git","ide","sdk","orm","cdn","dns","tcp",
                 "cse","it","ece","ee","me","ce"}
+    # tokens whose display casing doesn't follow normal title-case rules
+    overrides = {
+        "scikit-learn": "Scikit-Learn",
+        "numpy":        "NumPy",
+        "opencv":       "OpenCV",
+        "tensorflow":   "TensorFlow",
+        "pytorch":      "PyTorch",
+        "javascript":   "JavaScript",
+        "typescript":   "TypeScript",
+        "mongodb":      "MongoDB",
+        "postgresql":   "PostgreSQL",
+        "graphql":      "GraphQL",
+        "github":       "GitHub",
+        "gitlab":       "GitLab",
+        "linkedin":     "LinkedIn",
+        "langchain":    "LangChain",
+        "fastapi":      "FastAPI",
+        "nextjs":       "Next.js",
+        "nodejs":       "Node.js",
+        "next.js":      "Next.js",
+        "node.js":      "Node.js",
+        "hugging face": "Hugging Face",
+        "vs code":      "VS Code",
+        "deeplearning.ai": "DeepLearning.AI",
+    }
+    s_lower = s.lower()
+    if s_lower in overrides:
+        return overrides[s_lower]
     words = s.split()
     result = []
     for w in words:
-        if w.lower() in acronyms:
+        wl = w.lower()
+        if wl in overrides:
+            result.append(overrides[wl])
+        elif wl in acronyms:
             result.append(w.upper())
-        elif "." in w or w in {"next.js","node.js","scikit-learn"}:
+        elif "." in w:
             result.append(w)
         else:
             result.append(w.capitalize())
