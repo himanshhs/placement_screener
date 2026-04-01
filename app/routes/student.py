@@ -151,7 +151,7 @@ def my_profile():
     from app.services.keyword_extractor import extract_section_insights
     insights = extract_section_insights(student.resume)
     return render_template("student/my_profile.html",
-                           student=student,getattr=getattr, insights=insights)
+                           student=student, insights=insights)
 
 
 # ── student edit links ──────────────────────────────────────────────────────
@@ -255,7 +255,12 @@ def refresh_signals(student_id):
 
     if fetched:
         flash(f"Refreshed: {', '.join(fetched)}.", "success")
-    return redirect(url_for("student.profile", student_id=student_id))
+    # redirect back to wherever the request came from
+    from flask import request as req
+    ref = req.referrer or ''
+    if 'dashboard/students' in ref or ref.endswith('/students'):
+        return redirect(url_for('dashboard.students'))
+    return redirect(url_for('student.profile', student_id=student_id))
 
 
 # ── bulk CSV import ─────────────────────────────────────────────────────────

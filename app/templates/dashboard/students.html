@@ -52,10 +52,12 @@
             {% endif %}
           </td>
           <td>
-            {% if s.github_signal %}
+            {% if s.github_signal and s.github_signal.github_score %}
               <span class="badge badge-blue" style="font-family:'DM Mono',monospace">{{ s.github_signal.github_score|round(1) }}</span>
             {% elif s.github_url %}
-              <span class="badge badge-gray">linked</span>
+              <form method="POST" action="{{ url_for('student.refresh_signals', student_id=s.id) }}" style="display:inline">
+                <button class="badge badge-amber" style="border:none;cursor:pointer;font-family:inherit">Fetch</button>
+              </form>
             {% else %}
               <span style="color:var(--muted)">—</span>
             {% endif %}
