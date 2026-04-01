@@ -12,11 +12,23 @@
   </div>
   {% endif %}
 
-  <form method="POST">
+  <form method="POST" id="drive-form" onsubmit="return validateWeights()">
     <div class="grid-2">
       <div class="card">
         <h2>Scoring weights</h2>
-        <p class="muted mb-1" style="font-size:0.78rem">Auto-suggested from JD. Adjust as needed.</p>
+        <p class="muted mb-1" style="font-size:0.78rem">All weights must add up to exactly 100%.</p>
+
+        <div id="weight-total-bar" style="margin-bottom:1.25rem;padding:0.75rem 1rem;border-radius:8px;background:var(--surface2);border:1px solid var(--border2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+            <span style="font-size:0.78rem;color:var(--muted2)">Total weight</span>
+            <span id="total-display" style="font-family:'DM Mono',monospace;font-weight:700;font-size:1rem;color:var(--accent2)">100%</span>
+          </div>
+          <div style="background:var(--surface);border-radius:4px;height:6px;width:100%">
+            <div id="total-bar" style="height:6px;border-radius:4px;background:var(--accent2);width:100%;transition:width 0.2s,background 0.2s"></div>
+          </div>
+          <p id="total-hint" style="font-size:0.75rem;margin-top:0.4rem;color:var(--muted);display:none"></p>
+        </div>
+
         {% set axes = [
           ('weight_skills',     'Skills match',     pending.weights.skills),
           ('weight_projects',   'Projects match',   pending.weights.projects),
@@ -29,10 +41,15 @@
         <div class="weight-row">
           <span class="weight-label">{{ label }}</span>
           <input type="range" name="{{ name }}" min="0" max="0.6" step="0.01"
-                 value="{{ val }}" oninput="updateVal('{{ name }}', this.value)" style="flex:1">
+                 value="{{ val }}" oninput="updateVal('{{ name }}', this.value)"
+                 class="weight-slider" style="flex:1">
           <span class="weight-val" id="v_{{ name }}">{{ (val * 100)|round|int }}%</span>
         </div>
         {% endfor %}
+
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:0.75rem;width:100%;justify-content:center" onclick="normaliseWeights()">
+          Auto-balance to 100%
+        </button>
       </div>
 
       <div>
@@ -59,14 +76,106 @@
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:0.75rem;margin-top:0.25rem">
-      <button class="btn btn-primary" style="padding:0.6rem 1.5rem">Confirm and create drive</button>
+
+    <div style="display:flex;gap:0.75rem;margin-top:0.25rem;align-items:center">
+      <button type="submit" class="btn btn-primary" id="submit-btn" style="padding:0.6rem 1.5rem">
+        Confirm and create drive
+      </button>
       <a href="{{ url_for('drive.new_drive') }}" class="btn btn-ghost">Back</a>
+      <span id="submit-warning" style="font-size:0.8rem;color:var(--red);display:none">
+        Weights must add up to 100% before saving.
+      </span>
     </div>
   </form>
 </div>
+
 <script>
-function updateVal(n, v) { document.getElementById('v_'+n).textContent = Math.round(v*100)+'%'; }
-function updateBoost(n, v) { document.getElementById('b_'+n).textContent = parseFloat(v).toFixed(2)+'x'; }
+const TOLERANCE = 0.5; // allow ±0.5% rounding tolerance
+
+function getTotal() {
+  let total = 0;
+  document.querySelectorAll('.weight-slider').forEach(s => {
+    total += parseFloat(s.value) || 0;
+  });
+  return Math.round(total * 10000) / 100; // percent, 2dp
+}
+
+function updateTotal() {
+  const pct = getTotal();
+  const display = document.getElementById('total-display');
+  const bar     = document.getElementById('total-bar');
+  const hint    = document.getElementById('total-hint');
+  const warning = document.getElementById('submit-warning');
+  const btn     = document.getElementById('submit-btn');
+
+  display.textContent = pct.toFixed(1) + '%';
+
+  const barW = Math.min(pct, 100);
+  bar.style.width = barW + '%';
+
+  const diff = pct - 100;
+  const ok   = Math.abs(diff) <= TOLERANCE;
+
+  if (ok) {
+    display.style.color = 'var(--accent2)';
+    bar.style.background = 'var(--accent2)';
+    hint.style.display = 'none';
+    warning.style.display = 'none';
+    btn.style.opacity = '1';
+  } else if (diff > 0) {
+    display.style.color = 'var(--red)';
+    bar.style.background = 'var(--red)';
+    hint.textContent = 'Over by ' + diff.toFixed(1) + '% — reduce some weights.';
+    hint.style.color = 'var(--red)';
+    hint.style.display = 'block';
+    warning.style.display = 'inline';
+    btn.style.opacity = '0.5';
+  } else {
+    display.style.color = 'var(--amber)';
+    bar.style.background = 'var(--amber)';
+    hint.textContent = 'Under by ' + Math.abs(diff).toFixed(1) + '% — increase some weights.';
+    hint.style.color = 'var(--amber)';
+    hint.style.display = 'block';
+    warning.style.display = 'inline';
+    btn.style.opacity = '0.5';
+  }
+}
+
+function updateVal(name, val) {
+  document.getElementById('v_' + name).textContent = Math.round(val * 100) + '%';
+  updateTotal();
+}
+
+function updateBoost(name, val) {
+  document.getElementById('b_' + name).textContent = parseFloat(val).toFixed(2) + 'x';
+}
+
+function normaliseWeights() {
+  const sliders = document.querySelectorAll('.weight-slider');
+  let raw = Array.from(sliders).map(s => parseFloat(s.value) || 0);
+  const sum = raw.reduce((a, b) => a + b, 0);
+  if (sum === 0) return;
+  const factor = 1.0 / sum;
+  sliders.forEach((s, i) => {
+    const normed = Math.round(raw[i] * factor * 100) / 100;
+    s.value = normed;
+    const name = s.getAttribute('name');
+    document.getElementById('v_' + name).textContent = Math.round(normed * 100) + '%';
+  });
+  updateTotal();
+}
+
+function validateWeights() {
+  const pct = getTotal();
+  if (Math.abs(pct - 100) > TOLERANCE) {
+    document.getElementById('submit-warning').style.display = 'inline';
+    document.getElementById('submit-warning').scrollIntoView({ behavior: 'smooth' });
+    return false; // block submission
+  }
+  return true; // allow submission
+}
+
+// initialise on page load
+updateTotal();
 </script>
 {% endblock %}
