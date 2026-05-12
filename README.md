@@ -1,107 +1,135 @@
-# 🚀 AI-Powered Placement Screener
+# PlaceIQ — Placement Intelligence System
 
-> Automating resume shortlisting for campus placements using AI, semantic matching, and multi-signal scoring.
-
----
-
-## 🎯 Problem Statement
-
-Placement cells often receive **hundreds of resumes per drive**, making manual screening:
-- ⏳ Time-consuming
-- ❌ Error-prone
-- 📉 Inconsistent
+An AI-powered placement screening system built for college placement cells.
+Replaces 10th/12th percentage filtering with multi-signal scoring using
+resume NLP, GitHub activity, competitive programming authenticity, and
+JD-based dynamic weight configuration.
 
 ---
 
-## 💡 Solution
+## What it does
 
-This system automates candidate shortlisting by combining:
-- 📄 Resume analysis (semantic understanding)
-- 💻 Coding profile evaluation (LeetCode, Codeforces)
-- 🧑‍💻 GitHub activity signals
-- 🎓 Academic performance
-
-👉 Result: **Accurate, fast, and customizable shortlisting**
-
----
-
-## ⚙️ Key Features
-
-- 📥 **Bulk ERP Data Import** (CSV)
-- 🧠 **AI-based Job Description Analysis**
-- 🎚️ **Dynamic Weight Configuration**
-- 🔍 **Section-wise Resume Parsing**
-- 🧮 **Semantic Matching using SBERT**
-- 📊 **Multi-factor Candidate Scoring**
-- 📤 **Excel Export for Recruiters**
-- 🔐 **Authentication + Dashboard UI**
+- **Imports students** from college ERP via CSV bulk upload
+- **Parses resumes** section-by-section (Skills, Projects, Internships,
+  Experience, Certifications, Education)
+- **Fetches GitHub signals** — commits, streak, language diversity, recency
+- **Fetches CP signals** — LeetCode/Codeforces via Codolio with an
+  authenticity engine that detects fake submissions
+- **Scores students per drive** using SBERT semantic similarity against
+  the JD, weighted by configurable per-drive weights
+- **Ranks and shortlists** with full explainability — matched keywords,
+  missing skills, flags
+- **Exports Excel** shortlist ready to send to the company
 
 ---
 
-## 🔄 End-to-End Workflow
-
-1. 📥 Import student dataset (ERP CSV)
-2. ➕ Create placement drive
-3. 📄 Input Job Description
-4. ⚙️ Configure scoring weights
-5. ▶️ Run scoring engine
-6. 📊 Get ranked shortlist instantly
-7. 📤 Export results to Excel
-
----
-
-## 🧠 Scoring Logic (Core Innovation)
-
-Final Score =  
-- 🔹 Skills Match (SBERT Semantic Similarity)  
-- 🔹 GitHub Activity Score  
-- 🔹 Competitive Programming Score  
-- 🔹 Academic Score (CGPA)  
-- 🔹 Bonus Signals (Projects, Internships)
-
-👉 Fully customizable weight system per job role
-
----
-
-## 🏗️ Tech Stack
-
-| Layer        | Technology |
-|-------------|-----------|
-| Backend     | Python, Flask |
-| Database    | SQLite, SQLAlchemy |
-| AI/NLP      | Sentence Transformers (SBERT) |
-| Parsing     | PyMuPDF |
-| Frontend    | HTML, CSS, JavaScript |
-
----
-
-## 📊 Impact
-
-- ⚡ Shortlists **200+ students in seconds**
-- 📉 Reduces manual effort by **80–90%**
-- 🎯 Improves relevance using **semantic matching**
-- 🔄 Works across multiple job roles dynamically
-
----
-
-## 📸 Screenshots
-
-- Dashboard UI 
-<img width="1919" height="968" alt="image" src="https://github.com/user-attachments/assets/ccb6060d-9286-44d6-93f8-f3967e61463b" />
-
-- Drive Creation Page
-  <img width="1913" height="962" alt="image" src="https://github.com/user-attachments/assets/7e5be996-8601-4e9b-83f2-8c13144a805e" />
-
-- Scoring Results Table
-  <img width="1919" height="952" alt="image" src="https://github.com/user-attachments/assets/0dde129d-f764-4ce1-857b-ff739e32bdf6" />
-
----
-
-## ▶️ Local Setup
+## Quick start (local)
 
 ```bash
 git clone <your-repo-url>
 cd placement_screener
-venv\Scripts\activate
+
+python -m venv venv
+venv\Scripts\activate        # Windows
+source venv/bin/activate     # Mac/Linux
+
 pip install -r requirements.txt
+
 python run.py
+```
+
+Open `http://localhost:5000`
+
+Default login:
+- Email: `admin@placement.com`
+- Password: `admin123`
+
+**Change the default password before real use.**
+
+---
+
+## Populate with sample data
+
+```bash
+python scripts/seed_sample_data.py
+```
+
+Creates 10 students with varied profiles + 2 drives (Google, TCS) with
+scoring already run. Requires `sentence-transformers` and `pymupdf`
+installed.
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python, Flask |
+| Database | SQLite (SQLAlchemy ORM) |
+| NLP / Scoring | sentence-transformers (`all-MiniLM-L6-v2`), cosine similarity |
+| PDF parsing | PyMuPDF (fitz) |
+| Frontend | Jinja2 templates, vanilla CSS + JS |
+| Auth | Session-based, bcrypt-style SHA-256 + salt |
+| Export | openpyxl |
+
+---
+
+## Project structure
+
+```
+placement_screener/
+├── run.py                    # entry point
+├── requirements.txt
+├── Procfile                  # for Render/Heroku deployment
+├── render.yaml               # Render config
+├── scripts/
+│   └── seed_sample_data.py
+└── app/
+    ├── __init__.py           # app factory
+    ├── models/models.py      # all DB tables
+    ├── routes/               # auth, dashboard, drive, student
+    └── services/             # resume_parser, scoring_engine,
+                              # github_fetcher, cp_fetcher,
+                              # jd_analyzer, keyword_extractor,
+                              # erp_importer, auth_service
+```
+
+---
+
+## Deployment on Render (free tier)
+
+1. Push this repo to GitHub
+2. Go to [render.com](https://render.com) → New → Web Service
+3. Connect your GitHub repo
+4. Render auto-detects `render.yaml` — just set these env vars:
+   - `SECRET_KEY` — any long random string
+   - `GITHUB_TOKEN` — optional, for higher GitHub API rate limits
+5. Deploy
+
+---
+
+## Key design decisions
+
+**Why not use 10th/12th percentage?**
+Placement cells were forced to use it because no better tool existed.
+PlaceIQ replaces it with signals that actually predict performance —
+technical skills, real project work, genuine coding activity.
+
+**CP authenticity engine**
+Genuine competitive programmers retry problems multiple times (avg
+attempts/problem > 1.3). Fake submission farms submit once per problem
+and move on. This ratio, combined with contest participation and rating
+trajectory, produces an authenticity score (0–1) that multiplies the
+raw CP score.
+
+**Section-aware SBERT scoring**
+Instead of treating the entire resume as one text blob, each section
+is embedded separately and matched against the JD independently.
+Skills, Projects, and Internships each contribute with their own weight.
+
+**Configurable weights per drive**
+A product company JD heavy on "system design, Python, distributed
+systems" gets different suggested weights than a service company JD
+mentioning "communication, SQL, certifications". The JD analyzer
+reads keyword signals and suggests weights automatically, with the
+placement cell able to override via sliders before confirming.
